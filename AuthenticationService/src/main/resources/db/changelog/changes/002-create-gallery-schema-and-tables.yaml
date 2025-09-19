@@ -1,0 +1,139 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-gallery-schema
+      author: MTsikhanovich
+      changes:
+        - sql:
+            sql: CREATE SCHEMA IF NOT EXISTS gallery;
+
+  - changeSet:
+      id: create-images-table
+      author: MTsikhanovich
+      changes:
+        - createTable:
+            tableName: images
+            schemaName: gallery
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+                  defaultValueComputed: gen_random_uuid()
+              - column:
+                  name: url
+                  type: VARCHAR(500)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: TEXT
+              - column:
+                  name: uploaded_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+                  defaultValueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: user_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_images_user
+                    referencedTableName: users
+                    referencedTableSchemaName: user_schema
+                    referencedColumnNames: id
+                    deleteCascade: true
+
+  - changeSet:
+      id: create-comments-table
+      author: MTsikhanovich
+      changes:
+        - createTable:
+            tableName: comments
+            schemaName: gallery
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+                  defaultValueComputed: gen_random_uuid()
+              - column:
+                  name: image_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_comments_image
+                    referencedTableName: images
+                    referencedTableSchemaName: gallery
+                    referencedColumnNames: id
+                    deleteCascade: true
+              - column:
+                  name: user_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_comments_user
+                    referencedTableName: users
+                    referencedTableSchemaName: user_schema
+                    referencedColumnNames: id
+              - column:
+                  name: content
+                  type: TEXT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+                  defaultValueComputed: CURRENT_TIMESTAMP
+
+  - changeSet:
+      id: create-likes-table
+      author: MTsikhanovich
+      changes:
+        - createTable:
+            tableName: likes
+            schemaName: gallery
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+                  defaultValueComputed: gen_random_uuid()
+              - column:
+                  name: image_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_likes_image
+                    referencedTableName: images
+                    referencedTableSchemaName: gallery
+                    referencedColumnNames: id
+                    deleteCascade: true
+              - column:
+                  name: user_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_likes_user
+                    referencedTableName: users
+                    referencedTableSchemaName: user_schema
+                    referencedColumnNames: id
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+                  defaultValueComputed: CURRENT_TIMESTAMP
+        - addUniqueConstraint:
+            tableName: likes
+            schemaName: gallery
+            columnNames: image_id, user_id
+            constraintName: uk_likes_image_user
