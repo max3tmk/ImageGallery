@@ -2,10 +2,10 @@
 
 echo "Starting PostgreSQL container..."
 
-# Останавливаем и удаляем существующий контейнер, если есть
+# Stop and delete existing container if present
 docker stop postgres-app 2>/dev/null && docker rm postgres-app 2>/dev/null
 
-# Запускаем новый контейнер PostgreSQL
+# Starting new PostgreSQL container
 docker run -d \
   --name postgres-app \
   -e POSTGRES_DB=innowise \
