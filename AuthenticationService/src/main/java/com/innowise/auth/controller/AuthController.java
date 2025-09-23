@@ -3,7 +3,6 @@ package com.innowise.auth.controller;
 import com.innowise.auth.dto.AuthResponse;
 import com.innowise.auth.dto.LoginRequest;
 import com.innowise.auth.dto.RegisterRequest;
-import com.innowise.auth.entity.User;
 import com.innowise.auth.security.JwtUtil;
 import com.innowise.auth.service.UserService;
 import jakarta.validation.Valid;
@@ -30,15 +29,8 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
-        User user = userService.findByUsername(request.getUsername());
-        if (!userService.validatePassword(request.getPassword(), user.getPassword())) {
-            throw new RuntimeException("Invalid credentials");
-        }
-
-        String accessToken = jwtUtil.generateToken(user.getUsername(), user.getId().toString());
-        String refreshToken = jwtUtil.generateRefreshToken(user.getUsername(), user.getId().toString());
-
-        return ResponseEntity.ok(new AuthResponse(accessToken, refreshToken));
+        AuthResponse response = userService.login(request);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/validate")
@@ -52,12 +44,7 @@ public class AuthController {
     @PostMapping("/refresh")
     public ResponseEntity<AuthResponse> refreshToken(@RequestHeader("Authorization") String authHeader) {
         String token = authHeader.substring(7);
-        String username = jwtUtil.extractUsername(token);
-        String userId = jwtUtil.extractUserId(token);
-
-        String newAccessToken = jwtUtil.generateToken(username, userId);
-        String newRefreshToken = jwtUtil.generateRefreshToken(username, userId);
-
-        return ResponseEntity.ok(new AuthResponse(newAccessToken, newRefreshToken));
+        AuthResponse response = userService.refreshToken(token);
+        return ResponseEntity.ok(response);
     }
 }
