@@ -15,11 +15,11 @@
 
     <modules>
         <module>AuthenticationService</module>
-<!--
         <module>APIGatewayService</module>
-        <module>ImageService</module>
-        <module>ActivityService</module>
--->
+        <!--
+                <module>ImageService</module>
+                <module>ActivityService</module>
+        -->
     </modules>
 
     <properties>
