@@ -1,0 +1,9 @@
+databaseChangeLog:
+  - changeSet:
+      id: drop-salt-column
+      author: MTsikhanovich
+      changes:
+        - dropColumn:
+            tableName: users
+            schemaName: user_schema
+            columnName: salt
