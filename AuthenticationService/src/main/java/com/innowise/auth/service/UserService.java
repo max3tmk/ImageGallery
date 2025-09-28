@@ -4,74 +4,77 @@ import com.innowise.auth.dto.AuthResponse;
 import com.innowise.auth.dto.LoginRequest;
 import com.innowise.auth.dto.RegisterRequest;
 import com.innowise.auth.entity.User;
+import com.innowise.auth.exception.*;
 import com.innowise.auth.repository.UserRepository;
-import com.innowise.auth.security.JwtUtil;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import com.innowise.common.security.JwtUtil;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.UUID;
+
 @Service
+@RequiredArgsConstructor
 public class UserService {
 
     private final UserRepository userRepository;
-    private final BCryptPasswordEncoder passwordEncoder;
+    private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
 
-    public UserService(UserRepository userRepository, BCryptPasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.jwtUtil = jwtUtil;
-    }
-
-    public AuthResponse login(LoginRequest request) {
-        User user = findByUsername(request.getUsername());
-        if (!validatePassword(request.getPassword(), user.getPassword())) {
-            throw new RuntimeException("Invalid credentials");
+    public AuthResponse register(RegisterRequest request) {
+        if (userRepository.findByUsername(request.getUsername()).isPresent()) {
+            throw new UsernameAlreadyExistsException("Username already taken: " + request.getUsername());
         }
 
-        String accessToken = jwtUtil.generateToken(user.getUsername(), user.getId().toString());
-        String refreshToken = jwtUtil.generateRefreshToken(user.getUsername(), user.getId().toString());
-
-        return new AuthResponse(accessToken, refreshToken);
-    }
-
-    public User registerUser(RegisterRequest request) {
-        if (userRepository.existsByUsername(request.getUsername())) {
-            throw new RuntimeException("Username already exists");
+        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+            throw new EmailAlreadyExistsException("Email already taken: " + request.getEmail());
         }
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email already exists");
-        }
-
-        String encodedPassword = passwordEncoder.encode(request.getPassword());
 
         User user = new User();
         user.setUsername(request.getUsername());
         user.setEmail(request.getEmail());
-        user.setPassword(encodedPassword);
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user = userRepository.save(user);
 
-        return userRepository.save(user);
+        UUID userId = user.getId();
+        String accessToken = jwtUtil.generateToken(user.getUsername(), userId);
+        String refreshToken = jwtUtil.generateRefreshToken(user.getUsername(), userId);
+
+        return new AuthResponse(accessToken, refreshToken);
     }
 
-    public AuthResponse refreshToken(String token) {
-        String username = jwtUtil.extractUsername(token);
-        String userId = jwtUtil.extractUserId(token);
+    public AuthResponse login(LoginRequest request) {
+        User user = userRepository.findByUsername(request.getUsername())
+                .orElseThrow(() -> new InvalidCredentialsException("Invalid username or password"));
 
-        if (!jwtUtil.validateToken(token, username)) {
-            throw new RuntimeException("Invalid refresh token");
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            throw new InvalidCredentialsException("Invalid username or password");
         }
 
+        UUID userId = user.getId();
+        String accessToken = jwtUtil.generateToken(user.getUsername(), userId);
+        String refreshToken = jwtUtil.generateRefreshToken(user.getUsername(), userId);
+
+        return new AuthResponse(accessToken, refreshToken);
+    }
+
+    public AuthResponse refreshToken(String refreshToken) {
+        if (refreshToken == null || refreshToken.isBlank()) {
+            throw new InvalidRefreshTokenException("Refresh token is missing");
+        }
+
+        String username = jwtUtil.extractUsername(refreshToken);
+        if (!jwtUtil.validateToken(refreshToken, username)) {
+            throw new InvalidRefreshTokenException("Invalid or expired refresh token");
+        }
+
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException("User not found: " + username));
+
+        UUID userId = user.getId();
         String newAccessToken = jwtUtil.generateToken(username, userId);
         String newRefreshToken = jwtUtil.generateRefreshToken(username, userId);
 
         return new AuthResponse(newAccessToken, newRefreshToken);
-    }
-
-    public User findByUsername(String username) {
-        return userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-    }
-
-    public boolean validatePassword(String rawPassword, String encodedPassword) {
-        return passwordEncoder.matches(rawPassword, encodedPassword);
     }
 }

@@ -1,19 +1,15 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
-         http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.innowise</groupId>
-    <artifactId>ImageGallery</artifactId>
-    <version>1.0.0</version>
+    <artifactId>image-gallery</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-    <name>ImageGallery</name>
-    <description>Multi-module project for Image Gallery microservices</description>
-
     <modules>
+        <module>common</module>
         <module>AuthenticationService</module>
         <module>APIGatewayService</module>
     </modules>
@@ -27,8 +23,7 @@
         <spring-cloud.version>2025.0.0</spring-cloud.version>
 
         <!-- Maven Compiler -->
-        <maven.compiler.source>${java.version}</maven.compiler.source>
-        <maven.compiler.target>${java.version}</maven.compiler.target>
+        <maven.compiler.release>${java.version}</maven.compiler.release>
         <maven.compiler.plugin.version>3.13.0</maven.compiler.plugin.version>
 
         <!-- Encoding -->
@@ -63,24 +58,58 @@
         </dependencies>
     </dependencyManagement>
 
+    <dependencies>
+        <!-- Lombok -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>${lombok.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- JWT -->
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-api</artifactId>
+            <version>${jjwt.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-impl</artifactId>
+            <version>${jjwt.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-jackson</artifactId>
+            <version>${jjwt.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- Liquibase -->
+        <dependency>
+            <groupId>org.liquibase</groupId>
+            <artifactId>liquibase-core</artifactId>
+            <version>${liquibase.version}</version>
+        </dependency>
+    </dependencies>
+
     <build>
         <pluginManagement>
             <plugins>
-                <!-- Maven Compiler Plugin -->
+                <plugin>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-maven-plugin</artifactId>
+                    <version>${spring-boot.version}</version>
+                </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>${maven.compiler.plugin.version}</version>
                     <configuration>
-                        <release>${java.version}</release>
+                        <source>${java.version}</source>
+                        <target>${java.version}</target>
                     </configuration>
-                </plugin>
-
-                <!-- Spring Boot Maven Plugin -->
-                <plugin>
-                    <groupId>org.springframework.boot</groupId>
-                    <artifactId>spring-boot-maven-plugin</artifactId>
-                    <version>${spring-boot.version}</version>
                 </plugin>
             </plugins>
         </pluginManagement>

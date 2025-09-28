@@ -3,8 +3,9 @@ package com.innowise.auth.controller;
 import com.innowise.auth.dto.AuthResponse;
 import com.innowise.auth.dto.LoginRequest;
 import com.innowise.auth.dto.RegisterRequest;
-import com.innowise.auth.security.JwtUtil;
+import com.innowise.auth.dto.ValidationResponse;
 import com.innowise.auth.service.UserService;
+import com.innowise.common.security.JwtUtil;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,29 +23,26 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<String> register(@Valid @RequestBody RegisterRequest request) {
-        userService.registerUser(request);
-        return ResponseEntity.ok("User registered successfully");
+    public ResponseEntity<AuthResponse> register(@RequestBody RegisterRequest request) {
+        return ResponseEntity.ok(userService.register(request));
     }
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
-        AuthResponse response = userService.login(request);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(userService.login(request));
     }
 
     @GetMapping("/validate")
-    public ResponseEntity<Boolean> validateToken(@RequestHeader("Authorization") String authHeader) {
+    public ResponseEntity<ValidationResponse> validateToken(@RequestHeader("Authorization") String authHeader) {
         String token = authHeader.substring(7);
         String username = jwtUtil.extractUsername(token);
         boolean isValid = jwtUtil.validateToken(token, username);
-        return ResponseEntity.ok(isValid);
+        return ResponseEntity.ok(new ValidationResponse(isValid));
     }
 
     @PostMapping("/refresh")
     public ResponseEntity<AuthResponse> refreshToken(@RequestHeader("Authorization") String authHeader) {
         String token = authHeader.substring(7);
-        AuthResponse response = userService.refreshToken(token);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(userService.refreshToken(token));
     }
 }

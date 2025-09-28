@@ -2,7 +2,7 @@ FROM openjdk:17-slim
 
 WORKDIR /app
 
-COPY target/APIGatewayService-1.0.0.jar app.jar
+COPY target/api-gateway-service.jar app.jar
 
 EXPOSE 8085
 

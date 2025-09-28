@@ -1,0 +1,65 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: postgres-app
+    environment:
+      POSTGRES_DB: innowise
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    networks:
+      - innowise-network
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  localstack:
+    image: localstack/localstack:2.3.2
+    container_name: localstack
+    environment:
+      - SERVICES=s3
+      - DEBUG=1
+    ports:
+      - "4566:4566"
+    networks:
+      - innowise-network
+
+  authentication-service:
+    build:
+      context: ./AuthenticationService
+      dockerfile: Dockerfile
+    container_name: authentication-service
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: innowise
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+    depends_on:
+      - postgres
+    ports:
+      - "8080:8080"
+    networks:
+      - innowise-network
+
+  api-gateway:
+    build:
+      context: ./APIGatewayService
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    depends_on:
+      - authentication-service
+    ports:
+      - "8085:8085"
+    environment:
+      - AUTH_SERVICE_URL=http://authentication-service:8080
+      - IMAGE_SERVICE_URL=http://image-service:8081
+    networks:
+      - innowise-network
+
+networks:
+  innowise-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
