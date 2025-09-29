@@ -5,7 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$REPO_ROOT" || exit 1
 
-PORTS_SERVICES="8080:authentication-service 8081:image-service 8085:api-gateway 5432:postgres 4566:localstack"
+PORTS_SERVICES="8080:authentication-service 8081:image-service 8085:api-gateway 5432:postgres 4566:localstack 3000:frontend"
 
 echo "=== Killing processes on ports (only non-docker processes) ==="
 for entry in $PORTS_SERVICES; do
@@ -40,7 +40,7 @@ COMPOSE_BAKE=true docker compose down --remove-orphans
 echo "=== Building Maven projects ==="
 mvn -q clean package -DskipTests
 
-echo "=== Rebuilding and starting containers ==="
+echo "=== Rebuilding and starting containers (including frontend) ==="
 COMPOSE_BAKE=true docker compose up --build -d
 
 if COMPOSE_BAKE=true docker compose ps --services | grep -qw localstack; then

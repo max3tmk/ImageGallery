@@ -38,8 +38,3 @@ databaseChangeLog:
                   type: VARCHAR(100)
                   constraints:
                     nullable: false
-              - column:
-                  name: salt
-                  type: VARCHAR(100)
-                  constraints:
-                    nullable: false

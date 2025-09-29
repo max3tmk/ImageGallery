@@ -12,6 +12,7 @@
         <module>common</module>
         <module>AuthenticationService</module>
         <module>APIGatewayService</module>
+        <module>ImageService</module>
     </modules>
 
     <properties>

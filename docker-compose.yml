@@ -57,6 +57,18 @@ services:
     networks:
       - innowise-network
 
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend
+    ports:
+      - "3000:80"
+    networks:
+      - innowise-network
+    depends_on:
+      - api-gateway
+
 networks:
   innowise-network:
     driver: bridge

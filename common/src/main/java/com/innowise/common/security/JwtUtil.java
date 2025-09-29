@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.Date;
 import java.util.UUID;
 
@@ -46,14 +47,14 @@ public class JwtUtil {
     }
 
     private String buildToken(String username, UUID userId, long expirationMillis) {
-        Date now = new Date();
-        Date expiry = new Date(now.getTime() + expirationMillis);
+        Instant now = Instant.now();
+        Instant expiry = now.plusMillis(expirationMillis);
 
         return Jwts.builder()
-                .setSubject(username)
+                .subject(username)
                 .claim("userId", userId != null ? userId.toString() : null)
-                .setIssuedAt(now)
-                .setExpiration(expiry)
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(expiry))
                 .signWith(getKey())
                 .compact();
     }
