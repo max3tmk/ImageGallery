@@ -35,28 +35,28 @@ for entry in $PORTS_SERVICES; do
 done
 
 echo "=== Stopping and removing all containers (keep volumes) ==="
-COMPOSE_BAKE=true docker compose down --remove-orphans
+docker compose down --remove-orphans
 
 echo "=== Building Maven projects (common libs etc.) ==="
 mvn -q clean install -DskipTests
 
 echo "=== Starting only postgres & localstack ==="
-COMPOSE_BAKE=true docker compose up -d postgres localstack
+docker compose up -d postgres localstack
 
 echo "=== Initializing LocalStack ==="
-until COMPOSE_BAKE=true docker exec localstack awslocal s3 ls >/dev/null 2>&1; do
+until docker exec localstack awslocal s3 ls >/dev/null 2>&1; do
   echo "Waiting for LocalStack S3 to be ready..."
   sleep 2
 done
 echo "LocalStack S3 is ready."
 
 echo "=== Creating bucket 'images' (idempotent) ==="
-COMPOSE_BAKE=true docker exec localstack awslocal s3 mb s3://images 2>/dev/null || true
+docker exec localstack awslocal s3 mb s3://images 2>/dev/null || true
 
 echo "=== Uploading test file ==="
 echo "test" > /tmp/test.txt
-COMPOSE_BAKE=true docker cp /tmp/test.txt localstack:/tmp/test.txt
-COMPOSE_BAKE=true docker exec localstack awslocal s3 cp /tmp/test.txt s3://images/test.txt >/dev/null
+docker cp /tmp/test.txt localstack:/tmp/test.txt
+docker exec localstack awslocal s3 cp /tmp/test.txt s3://images/test.txt >/dev/null
 
 echo "=== LocalStack initialization complete ==="
 echo "=== postgres + localstack restarted (db persisted) ==="
