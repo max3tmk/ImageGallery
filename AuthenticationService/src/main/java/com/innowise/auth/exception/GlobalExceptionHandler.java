@@ -2,30 +2,26 @@ package com.innowise.auth.exception;
 
 import com.innowise.auth.dto.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    private ResponseEntity<ErrorResponse> buildErrorResponse(
-            Exception ex,
-            HttpStatus status,
-            String path
-    ) {
-        ErrorResponse response = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
-                .status(status.value())
-                .error(status.getReasonPhrase())
-                .message(ex.getMessage())
-                .path(path)
-                .build();
-        return ResponseEntity.status(status).body(response);
+    private final MessageSource messageSource;
+
+    public GlobalExceptionHandler(MessageSource messageSource) {
+        this.messageSource = messageSource;
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -33,55 +29,45 @@ public class GlobalExceptionHandler {
             MethodArgumentNotValidException ex,
             HttpServletRequest request
     ) {
-        return buildErrorResponse(ex, HttpStatus.BAD_REQUEST, request.getRequestURI());
-    }
+        Map<String, String> errors = new HashMap<>();
+        ex.getBindingResult().getAllErrors().forEach((error) -> {
+            String fieldName = ((FieldError) error).getField();
+            String[] codes = error.getCodes();
+            String message = null;
 
-    @ExceptionHandler(UsernameAlreadyExistsException.class)
-    public ResponseEntity<ErrorResponse> handleUsernameAlreadyExists(
-            UsernameAlreadyExistsException ex,
-            HttpServletRequest request
-    ) {
-        return buildErrorResponse(ex, HttpStatus.CONFLICT, request.getRequestURI());
-    }
+            if (codes != null) {
+                for (String code : codes) {
+                    message = messageSource.getMessage(
+                            code,
+                            null,
+                            null,
+                            LocaleContextHolder.getLocale()
+                    );
+                    if (message != null) break;
+                }
+            }
 
-    @ExceptionHandler(EmailAlreadyExistsException.class)
-    public ResponseEntity<ErrorResponse> handleEmailAlreadyExists(
-            EmailAlreadyExistsException ex,
-            HttpServletRequest request
-    ) {
-        return buildErrorResponse(ex, HttpStatus.CONFLICT, request.getRequestURI());
-    }
+            if (message == null) {
+                message = error.getDefaultMessage();
+            }
 
-    @ExceptionHandler(InvalidCredentialsException.class)
-    public ResponseEntity<ErrorResponse> handleInvalidCredentials(
-            InvalidCredentialsException ex,
-            HttpServletRequest request
-    ) {
-        return buildErrorResponse(ex, HttpStatus.UNAUTHORIZED, request.getRequestURI());
-    }
+            errors.put(fieldName, message);
+        });
 
-    @ExceptionHandler(InvalidRefreshTokenException.class)
-    public ResponseEntity<ErrorResponse> handleInvalidRefreshToken(
-            InvalidRefreshTokenException ex,
-            HttpServletRequest request
-    ) {
-        return buildErrorResponse(ex, HttpStatus.BAD_REQUEST, request.getRequestURI());
-    }
+        String combinedMessage = errors.entrySet().stream()
+                .map(entry -> entry.getKey() + ": " + entry.getValue())
+                .reduce((a, b) -> a + "; " + b)
+                .orElse("Validation failed");
 
-    @ExceptionHandler(TokenValidationException.class)
-    public ResponseEntity<ErrorResponse> handleTokenValidation(
-            TokenValidationException ex,
-            HttpServletRequest request
-    ) {
-        return buildErrorResponse(ex, HttpStatus.UNAUTHORIZED, request.getRequestURI());
-    }
+        ErrorResponse response = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error("Bad Request")
+                .message(combinedMessage)
+                .path(request.getRequestURI())
+                .build();
 
-    @ExceptionHandler(UserNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleUserNotFound(
-            UserNotFoundException ex,
-            HttpServletRequest request
-    ) {
-        return buildErrorResponse(ex, HttpStatus.NOT_FOUND, request.getRequestURI());
+        return ResponseEntity.badRequest().body(response);
     }
 
     @ExceptionHandler(RuntimeException.class)
@@ -89,6 +75,27 @@ public class GlobalExceptionHandler {
             RuntimeException ex,
             HttpServletRequest request
     ) {
-        return buildErrorResponse(ex, HttpStatus.INTERNAL_SERVER_ERROR, request.getRequestURI());
+        String message = ex.getMessage() != null ? ex.getMessage() : "Internal server error";
+
+        HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
+        if (message.contains("already taken")) {
+            status = HttpStatus.CONFLICT;
+        } else if (message.contains("Invalid username or password") ||
+                message.contains("Refresh token is missing") ||
+                message.contains("Invalid or expired refresh token")) {
+            status = HttpStatus.UNAUTHORIZED;
+        } else if (message.contains("User not found")) {
+            status = HttpStatus.NOT_FOUND;
+        }
+
+        ErrorResponse response = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(status.value())
+                .error(status.getReasonPhrase())
+                .message(message)
+                .path(request.getRequestURI())
+                .build();
+
+        return ResponseEntity.status(status).body(response);
     }
 }

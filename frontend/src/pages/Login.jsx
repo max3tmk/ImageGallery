@@ -1,25 +1,51 @@
-import { useDispatch } from 'react-redux';
-import { loginStart, loginSuccess, loginFailure } from '../features/authSlice';
-import { loginRequest } from '../api/auth';
-import AuthForm from '../components/AuthForm';
+import React, { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { login } from "../features/authSlice";
+import { useNavigate } from "react-router-dom";
 
 export default function Login() {
+    const [username, setUsername] = useState("");
+    const [password, setPassword] = useState("");
     const dispatch = useDispatch();
+    const navigate = useNavigate();
 
-    const handleLogin = async (credentials) => {
-        dispatch(loginStart());
-        try {
-            const response = await loginRequest(credentials);
-            dispatch(loginSuccess(response.data));
-        } catch (err) {
-            dispatch(loginFailure(err.response?.data?.message || 'Login failed'));
-        }
+    const { error, token } = useSelector((state) => state.auth);
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        dispatch(login({ username, password }));
     };
+
+    // Redirect if login was successful (token exists)
+    useEffect(() => {
+        if (token) {
+            navigate("/");
+        }
+    }, [token, navigate]);
 
     return (
         <div>
             <h2>Login</h2>
-            <AuthForm onSubmit={handleLogin} buttonText="Login" />
+            <form onSubmit={handleSubmit}>
+                <input
+                    type="text"
+                    placeholder="Username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                />
+                <input
+                    type="password"
+                    placeholder="Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                />
+                <button type="submit">Login</button>
+            </form>
+            {error && (
+                <p style={{ color: "red" }}>
+                    {typeof error === "object" ? error.message || JSON.stringify(error) : error}
+                </p>
+            )}
         </div>
     );
 }

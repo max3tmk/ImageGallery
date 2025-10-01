@@ -1,27 +1,14 @@
-# Stage 1: Build React app
-FROM node:22 AS build
-
+# Build stage
+FROM node:20-alpine AS build
 WORKDIR /app
-
-# Copy only package.json + package-lock.json first (for caching)
-COPY package*.json ./
-
-# Install dependencies (cached if package.json/lock unchanged)
+COPY package*.json .env ./
 RUN npm install
-
-# Copy the rest of the frontend source
 COPY . .
-
-# Build the app
 RUN npm run build
 
-
-# Stage 2: Serve with Nginx
-FROM nginx:1.27-alpine AS serve
-
-# Copy built files from previous stage
+# Run stage
+FROM nginx:alpine
 COPY --from=build /app/dist /usr/share/nginx/html
-
-EXPOSE 3000
-
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
