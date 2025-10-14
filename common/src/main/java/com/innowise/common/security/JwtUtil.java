@@ -61,8 +61,12 @@ public class JwtUtil {
     }
 
     public String extractUsername(String token) {
-        Claims claims = extractAllClaims(token);
-        return claims.getSubject();
+        try {
+            Claims claims = extractAllClaims(token);
+            return claims.getSubject();
+        } catch (JwtException | IllegalArgumentException e) {
+            throw e;
+        }
     }
 
     public UUID extractUserId(String token) {
