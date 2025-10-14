@@ -1,4 +1,4 @@
-.PHONY: docker idea
+.PHONY: docker idea clean
 
 default: docker
 
@@ -7,3 +7,7 @@ docker:
 
 idea:
 	./scripts/stack_restart_idea.sh
+
+clean:
+	docker compose down -v --remove-orphans
+	docker system prune -f
