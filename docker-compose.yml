@@ -14,7 +14,8 @@ services:
       - postgres_data:/var/lib/postgresql/data
 
   localstack:
-    image: localstack/localstack:2.3.2
+#    image: localstack/localstack:2.3.2
+    image: localstack/localstack:latest
     container_name: localstack
     environment:
       - SERVICES=s3

@@ -23,7 +23,7 @@ public class SecurityConfig {
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
                 .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
-                .authorizeExchange(exchange -> exchange.anyExchange().permitAll())
+                .authorizeExchange(ex -> ex.anyExchange().permitAll())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .build();
     }

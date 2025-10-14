@@ -1,6 +1,7 @@
 package com.innowise.common.security;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -61,7 +62,7 @@ public class JwtUtil {
 
     public String extractUsername(String token) {
         Claims claims = extractAllClaims(token);
-        return claims != null ? claims.getSubject() : null;
+        return claims.getSubject();
     }
 
     public UUID extractUserId(String token) {
@@ -74,15 +75,19 @@ public class JwtUtil {
     public boolean validateToken(String token) {
         try {
             Claims claims = extractAllClaims(token);
-            return (claims != null) && !isTokenExpired(claims);
+            return (claims != null) && isTokenNotExpired(claims);
         } catch (Exception e) {
             return false;
         }
     }
 
     public boolean validateToken(String token, String username) {
-        String extracted = extractUsername(token);
-        return extracted != null && extracted.equals(username) && validateToken(token);
+        try {
+            String extracted = extractUsername(token);
+            return extracted != null && extracted.equals(username) && isTokenNotExpired(extractAllClaims(token));
+        } catch (JwtException | IllegalArgumentException e) {
+            return false;
+        }
     }
 
     private Claims extractAllClaims(String token) {
@@ -93,8 +98,8 @@ public class JwtUtil {
                 .getPayload();
     }
 
-    private boolean isTokenExpired(Claims claims) {
+    private boolean isTokenNotExpired(Claims claims) {
         Date exp = claims.getExpiration();
-        return exp == null || exp.before(new Date());
+        return exp != null && !exp.before(new Date());
     }
 }

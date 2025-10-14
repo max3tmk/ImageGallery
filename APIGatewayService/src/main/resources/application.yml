@@ -21,7 +21,7 @@ spring:
             - id: image-service
               uri: ${IMAGE_SERVICE_URL:http://localhost:8081}
               predicates:
-                - Path=/api/images/**
+                - Path=/api/images/**, /api/user/*/images
 
   liquibase:
     enabled: false
