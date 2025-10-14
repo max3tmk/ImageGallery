@@ -112,9 +112,8 @@ class CommentServiceImplTest {
         when(commentRepository.findByIdAndImageIdAndUserIdOrderByCreatedAtDesc(commentId, imageId, userId))
                 .thenReturn(Optional.empty());
 
-        CommentDto commentDto = new CommentDto();
         assertThrows(NotFoundException.class,
-                () -> commentService.updateComment(imageId, commentId, userId, commentDto));
+                () -> commentService.updateComment(imageId, commentId, userId, new CommentDto()));
     }
 
     @Test
