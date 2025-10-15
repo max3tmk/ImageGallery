@@ -27,5 +27,5 @@ aws:
     endpoint: ${S3_ENDPOINT:http://localstack:4566}
     region: ${S3_REGION:us-east-1}
     bucket: ${S3_BUCKET:images}
-    access-key: ${AWS_ACCESS_KEY_ID:test}
+    access-key: ${AWS_ACCESS_KEY_ID:test CI}
     secret-key: ${AWS_SECRET_ACCESS_KEY:test}
