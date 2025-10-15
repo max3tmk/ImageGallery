@@ -1,0 +1,73 @@
+name: ImageService CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'ImageService/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'ImageService/**'
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build with Maven
+        working-directory: ./ImageService
+        run: mvn clean package -DskipTests
+
+      - name: Run tests
+        working-directory: ./ImageService
+        run: mvn test
+
+      - name: Run SonarQube analysis
+        working-directory: ./ImageService
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mvn verify sonar:sonar \
+            -Dsonar.projectKey=max3tmk_ImageGallery \
+            -Dsonar.host.url=https://sonarcloud.io \
+            -Dsonar.organization=innowise-max3tmk \
+            -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+
+  build-and-publish-docker:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./ImageService
+          push: true
+          tags: max3tmk/image-service:latest
