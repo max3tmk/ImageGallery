@@ -30,10 +30,6 @@ public class ImageController {
     private final ImageService imageService;
     private final CommentService commentService;
 
-    static {
-        System.out.println(">>> ImageController loaded into context");
-    }
-
     // ---------------------- IMAGES ----------------------
 
     @PostMapping(value = "/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -43,7 +39,6 @@ public class ImageController {
             @RequestPart(name = "description", required = false) String description
     ) throws IOException {
 
-        System.out.println("<<<>>> Uploading image ...");
         UUID userId = extractUserIdFromAuthHeader(authHeader);
         UploadResponseDto dto = imageService.uploadImage(file, userId, description);
         return ResponseEntity

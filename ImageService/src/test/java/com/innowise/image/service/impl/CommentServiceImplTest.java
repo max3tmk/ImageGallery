@@ -31,6 +31,9 @@ class CommentServiceImplTest {
     @Mock
     private ModelMapper modelMapper;
 
+    @Mock
+    private AuthServiceClient authServiceClient;
+
     @InjectMocks
     private CommentServiceImpl commentService;
 
