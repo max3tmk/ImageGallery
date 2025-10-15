@@ -114,7 +114,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private boolean isRestrictedImagePath(String path) {
-        return path.matches("/api/user/.+/images.*");
+        if (!path.startsWith("/api/user/")) {
+            return false;
+        }
+
+        String[] segments = path.split("/");
+        return segments.length >= 4 && "images".equals(segments[4]);
     }
 
     private boolean isUserAllowedForImageAccess(String path, UUID userId, HttpServletResponse response) throws IOException {
