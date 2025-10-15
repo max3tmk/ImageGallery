@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/local/bin/bash
 # Pull updates from all module repositories into Monorepo branch
 # Commit and push updates into remote Monorepo
 

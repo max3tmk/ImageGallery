@@ -1,15 +1,25 @@
-#!/bin/bash
-# Script to push changes from Monorepo into individual module repositories.
-# Feature branches: create pull requests.
-# Main branch: push without pull request. Any local changes are temporarily stashed.
+#!/usr/bin/env bash
+# PushAll.sh
+# Push changes from Monorepo into individual module repositories
+# Preserves commit history using git subtree
+# For main branch: push directly without PR
+# For feature branches: push to module branch and create PR
 
 set -e
 
-# Determine current Monorepo branch
 MONO_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 echo "Current Monorepo branch: $MONO_BRANCH"
 
-# List of module directories and their remote URLs
+# Detect uncommitted changes and stash
+if ! git diff --quiet || ! git diff --cached --quiet; then
+    echo "Local changes detected. Stashing before push..."
+    git stash push -m "Temp stash before PushAll"
+    STASHED=true
+else
+    STASHED=false
+fi
+
+# List of modules and their remotes
 declare -A MODULES
 MODULES["APIGatewayService"]="git@github.com:max3tmk/APIGatewayService.git"
 MODULES["AuthenticationService"]="git@github.com:max3tmk/AuthenticationService.git"
@@ -17,56 +27,29 @@ MODULES["Common"]="git@github.com:max3tmk/Common.git"
 MODULES["ImageService"]="git@github.com:max3tmk/ImageService.git"
 MODULES["frontend"]="git@github.com:max3tmk/frontend.git"
 
-STASHED=false
-
-if [ "$MONO_BRANCH" == "main" ]; then
-    echo "You are on main branch."
-
-    # Check for local changes compared to origin/main
-    if ! git diff --quiet origin/main; then
-        echo "Local changes detected. Stashing before push..."
-        git stash push -m "Temp stash before PushAll"
-        STASHED=true
-    fi
-fi
-
 for module in "${!MODULES[@]}"; do
-    echo "Processing module: $module"
     REMOTE_URL=${MODULES[$module]}
+    echo "Processing module: $module"
 
-    # Check if there are changes in this module
-    if git diff --name-only HEAD~1 HEAD | grep -q "^$module/"; then
-        echo "Changes detected in $module"
+    # Check if module folder exists
+    if [ ! -d "$module" ]; then
+        echo "Module folder $module not found, skipping..."
+        continue
+    fi
 
-        cd $module
-
-        # Create or switch to branch with same name as Monorepo branch
-        git checkout -B "$MONO_BRANCH"
-
-        git add -A
-
-        # Commit changes if any
-        if ! git diff --cached --quiet; then
-            git commit -m "Sync from Monorepo branch $MONO_BRANCH"
-        else
-            echo "No staged changes in $module"
-        fi
-
-        # Push to module remote
-        git push -u "$REMOTE_URL" "$MONO_BRANCH" --force
-
-        # Create Pull Request only if not main
-        if [ "$MONO_BRANCH" != "main" ]; then
-            echo "Creating pull request for $module..."
-            PR_BODY=$(git log --format="%h %s" origin/main..HEAD)
-            gh pr create --repo "$REMOTE_URL" --base main --head "$MONO_BRANCH" --title "$MONO_BRANCH" --body "$PR_BODY"
-        else
-            echo "Main branch detected, no pull request created."
-        fi
-
-        cd ..
+    # For main branch: direct push subtree
+    if [ "$MONO_BRANCH" == "main" ]; then
+        echo "Pushing $module directly to main branch (preserving history)..."
+        git subtree push --prefix="$module" "$REMOTE_URL" main || echo "Nothing to push for $module"
     else
-        echo "No changes in $module"
+        # Feature branch: push to same branch in module and create PR
+        echo "Pushing $module to branch $MONO_BRANCH and creating PR..."
+        git subtree split --prefix="$module" -b temp_split_branch
+        git push -u "$REMOTE_URL" temp_split_branch:"$MONO_BRANCH" --force
+        # Create PR using GitHub CLI
+        PR_BODY=$(git log --format="%h %s" origin/main..temp_split_branch)
+        gh pr create --repo "$REMOTE_URL" --base main --head "$MONO_BRANCH" --title "$MONO_BRANCH" --body "$PR_BODY"
+        git branch -D temp_split_branch
     fi
 done
 
