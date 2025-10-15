@@ -59,8 +59,14 @@ public class CommentServiceImpl implements CommentService {
     public List<CommentDto> listComments(UUID imageId) {
         List<CommentEntity> comments = commentRepository.findAllByImageIdOrderByCreatedAtDesc(imageId);
         return comments.stream()
-                .map(this::mapCommentToDto)
-                .collect(Collectors.toList());
+                .map(this::toCommentDto)
+                .toList();
+    }
+
+    private CommentDto toCommentDto(CommentEntity comment) {
+        CommentDto dto = modelMapper.map(comment, CommentDto.class);
+        dto.setAuthorName(authServiceClient.getUsernameById(comment.getUserId()));
+        return dto;
     }
 
     private CommentDto mapCommentToDto(CommentEntity comment) {
