@@ -74,12 +74,6 @@ public class CommentServiceImpl implements CommentService {
         return dto;
     }
 
-    private CommentDto mapCommentToDto(CommentEntity comment) {
-        CommentDto dto = modelMapper.map(comment, CommentDto.class);
-        enrichWithAuthorName(dto, comment.getUserId());
-        return dto;
-    }
-
     private void enrichWithAuthorName(CommentDto dto, UUID userId) {
         String authorName = authServiceClient.getUsernameById(userId);
         dto.setAuthorName(authorName);
