@@ -27,8 +27,14 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
+<<<<<<< HEAD
       - name: Build entire project
         run: mvn clean install -DskipTests
+=======
+      - name: Build with Maven
+        working-directory: ./ImageService
+        run: mvn clean package -DskipTests
+>>>>>>> 18be2c9 (Add CI/CD pipeline for ImageService)
 
       - name: Run tests
         working-directory: ./ImageService
