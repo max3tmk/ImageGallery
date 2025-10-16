@@ -14,7 +14,6 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -73,8 +72,4 @@ public class CommentServiceImpl implements CommentService {
         dto.setAuthorName(authServiceClient.getUsernameById(comment.getUserId()));
         return dto;
     }
-
-    private void enrichWithAuthorName(CommentDto dto, UUID userId) {
-        String authorName = authServiceClient.getUsernameById(userId);
-        dto.setAuthorName(authorName);
-    }}
+}
