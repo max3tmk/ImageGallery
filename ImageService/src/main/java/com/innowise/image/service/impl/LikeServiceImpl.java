@@ -5,7 +5,6 @@ import com.innowise.image.repository.LikeRepository;
 import com.innowise.image.service.LikeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.PathVariable;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -32,7 +31,7 @@ public class LikeServiceImpl implements LikeService {
     }
 
     @Override
-    public int countLikes(@PathVariable("id") UUID imageId) {
+    public int countLikes(UUID imageId) {
         return likeRepository.countByImageId(imageId);
     }
 }

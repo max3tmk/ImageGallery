@@ -4,6 +4,7 @@ import com.innowise.image.dto.ImageDto;
 import com.innowise.image.dto.UploadResponseDto;
 import com.innowise.image.entity.ImageEntity;
 import com.innowise.image.exception.NotFoundException;
+import com.innowise.image.exception.S3ReadException;
 import com.innowise.image.repository.ImageRepository;
 import com.innowise.image.service.ImageService;
 import lombok.RequiredArgsConstructor;
@@ -96,7 +97,7 @@ public class ImageServiceImpl implements ImageService {
         try {
             return response.readAllBytes();
         } catch (IOException e) {
-            throw new RuntimeException("Failed to read image from S3", e);
+            throw new S3ReadException("Failed to read image from S3");
         }
     }
 
