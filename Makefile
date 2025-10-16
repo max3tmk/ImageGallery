@@ -1,4 +1,4 @@
-.PHONY: docker idea clean
+.PHONY: docker idea clean push pull
 
 default: docker
 
@@ -11,3 +11,9 @@ idea:
 clean:
 	docker compose down -v --remove-orphans
 	docker system prune -f
+
+push:
+	/usr/local/bin/bash ./scripts/push-all.sh
+
+pull:
+	/usr/local/bin/bash ./scripts/pull-all.sh

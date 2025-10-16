@@ -27,9 +27,8 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: Build with Maven
-        working-directory: ./ImageService
-        run: mvn clean package -DskipTests
+      - name: Build entire project
+        run: mvn clean install -DskipTests
 
       - name: Run tests
         working-directory: ./ImageService
