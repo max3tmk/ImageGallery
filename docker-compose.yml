@@ -14,16 +14,50 @@ services:
       - postgres_data:/var/lib/postgresql/data
 
   localstack:
-#    image: localstack/localstack:2.3.2
-    image: localstack/localstack:latest
+    image: localstack/localstack:4.9.2
     container_name: localstack
     environment:
       - SERVICES=s3
       - DEBUG=1
+      - LOCALSTACK_HOST=0.0.0.0
+      - DATA_DIR=/var/lib/localstack
     ports:
       - "4566:4566"
     networks:
       - innowise-network
+    volumes:
+      - localstack_data:/var/lib/localstack
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    networks:
+      - innowise-network
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    networks:
+      - innowise-network
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092  # ВАЖНО: localhost вместо kafka
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: true
+      KAFKA_NUM_PARTITIONS: 3
 
   authentication-service:
     build:
@@ -70,9 +104,30 @@ services:
     depends_on:
       - api-gateway
 
+  image-service:
+    build:
+      context: ./ImageService
+      dockerfile: Dockerfile
+    container_name: image-service
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: innowise
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    depends_on:
+      - postgres
+      - kafka
+    ports:
+      - "8081:8081"
+    networks:
+      - innowise-network
+
 networks:
   innowise-network:
     driver: bridge
 
 volumes:
   postgres_data:
+  localstack_data:

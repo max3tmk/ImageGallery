@@ -57,8 +57,6 @@ class UserServiceTest {
         user.setPassword("encoded");
     }
 
-    // ---------------- REGISTER ----------------
-
     @Test
     void register_ShouldCreateUser_WhenValidData() {
         when(userRepository.existsByUsername("john")).thenReturn(false);
@@ -98,8 +96,6 @@ class UserServiceTest {
         verify(userRepository, never()).save(any());
     }
 
-    // ---------------- LOGIN ----------------
-
     @Test
     void login_ShouldReturnTokens_WhenCredentialsValid() {
         when(userRepository.findByUsername("john")).thenReturn(Optional.of(user));
@@ -133,8 +129,6 @@ class UserServiceTest {
 
         assertEquals("Invalid username or password", ex.getMessage());
     }
-
-    // ---------------- REFRESH ----------------
 
     @Test
     void refreshToken_ShouldGenerateNewTokens_WhenValid() {

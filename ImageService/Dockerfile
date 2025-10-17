@@ -1,5 +1,7 @@
 FROM openjdk:17-slim
 
+RUN adduser --no-create-home --disabled-password --gecos '' appuser
+
 ARG JAR_FILE=target/*.jar
 WORKDIR /app
 

@@ -5,7 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$REPO_ROOT" || exit 1
 
-PORTS_SERVICES="8080:authentication-service 8081:image-service 8085:api-gateway 5432:postgres 4566:localstack"
+PORTS_SERVICES="8080:authentication-service 8081:image-service 8085:api-gateway 5432:postgres 4566:localstack 9092:kafka"
 
 echo "=== Killing processes on ports (only non-docker processes) ==="
 for entry in $PORTS_SERVICES; do
@@ -40,8 +40,8 @@ docker compose down --remove-orphans
 echo "=== Building Maven projects (common libs etc.) ==="
 mvn -q clean install -DskipTests
 
-echo "=== Starting only postgres & localstack ==="
-docker compose up -d postgres localstack
+echo "=== Starting postgres, localstack and kafka ==="
+docker compose up -d postgres localstack kafka
 
 echo "=== Initializing LocalStack ==="
 until docker exec localstack awslocal s3 ls >/dev/null 2>&1; do
@@ -58,5 +58,14 @@ echo "test" > /tmp/test.txt
 docker cp /tmp/test.txt localstack:/tmp/test.txt
 docker exec localstack awslocal s3 cp /tmp/test.txt s3://images/test.txt >/dev/null
 
-echo "=== LocalStack initialization complete ==="
-echo "=== postgres + localstack restarted (db persisted) ==="
+echo "=== Waiting for Kafka to be ready ==="
+until nc -z localhost 9092; do
+  echo "Waiting for Kafka port 9092..."
+  sleep 2
+done
+echo "Kafka port is ready."
+sleep 5
+echo "Kafka should be ready now."
+
+echo "=== LocalStack and Kafka initialization complete ==="
+echo "=== postgres + localstack + kafka restarted (db persisted) ==="

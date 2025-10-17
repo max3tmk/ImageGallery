@@ -4,6 +4,13 @@ server:
 spring:
   application:
     name: image-service
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.trusted.packages: com.innowise.image.dto.event
 
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:innowise}
@@ -36,4 +43,7 @@ cors:
 
 auth:
   service:
-    url: http://localhost:8080
+    url: ${AUTH_SERVICE_URL:http://localhost:8080}
+
+kafka:
+  bootstrap-servers: localhost:9092

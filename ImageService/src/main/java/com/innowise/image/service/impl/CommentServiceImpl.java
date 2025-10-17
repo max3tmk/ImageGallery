@@ -6,6 +6,7 @@ import com.innowise.image.entity.CommentEntity;
 import com.innowise.image.exception.NotFoundException;
 import com.innowise.image.repository.CommentRepository;
 import com.innowise.image.service.CommentService;
+import com.innowise.image.service.KafkaProducerService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
@@ -19,6 +20,7 @@ import java.util.UUID;
 public class CommentServiceImpl implements CommentService {
 
     private final CommentRepository commentRepository;
+    private final KafkaProducerService kafkaProducerService;
     private final AuthServiceClient authServiceClient;
     private final ModelMapper modelMapper;
 
@@ -29,7 +31,8 @@ public class CommentServiceImpl implements CommentService {
         comment.setUserId(userId);
         comment.setContent(request.getContent());
         comment.setCreatedAt(Instant.now());
-        commentRepository.save(comment);
+        CommentEntity savedComment = commentRepository.save(comment);
+        kafkaProducerService.sendCommentEvent(userId, imageId, savedComment.getId(), request.getContent(), true);
 
         CommentDto commentDto = modelMapper.map(comment, CommentDto.class);
         commentDto.setAuthorName(authServiceClient.getUsernameById(userId));
@@ -51,7 +54,9 @@ public class CommentServiceImpl implements CommentService {
     public void deleteComment(UUID imageId, UUID commentId, UUID userId) {
         CommentEntity comment = commentRepository.findByIdAndImageIdAndUserIdOrderByCreatedAtDesc(commentId, imageId, userId)
                 .orElseThrow(() -> new NotFoundException("Comment not found"));
+        String content = comment.getContent();
         commentRepository.delete(comment);
+        kafkaProducerService.sendCommentEvent(userId, imageId, commentId, content, false);
     }
 
     @Override

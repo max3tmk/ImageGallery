@@ -5,7 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$REPO_ROOT" || exit 1
 
-PORTS_SERVICES="8080:authentication-service 8081:image-service 8085:api-gateway 5432:postgres 4566:localstack 3000:frontend"
+PORTS_SERVICES="8080:authentication-service 8081:image-service 8085:api-gateway 5432:postgres 4566:localstack 3000:frontend 9092:kafka"
 
 echo "=== Killing processes on ports (only non-docker processes) ==="
 for entry in $PORTS_SERVICES; do
@@ -59,5 +59,14 @@ if docker compose ps --services | grep -qw localstack; then
   docker cp /tmp/test.txt localstack:/tmp/test.txt
   docker exec localstack awslocal s3 cp /tmp/test.txt s3://images/test.txt >/dev/null
 fi
+
+echo "=== Waiting for Kafka to be ready ==="
+until nc -z localhost 9092; do
+  echo "Waiting for Kafka port 9092..."
+  sleep 2
+done
+echo "Kafka port is ready."
+sleep 5
+echo "Kafka should be ready now."
 
 echo "=== Stack restarted successfully (db persisted) ==="

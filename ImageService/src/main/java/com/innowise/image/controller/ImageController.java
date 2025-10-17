@@ -30,8 +30,6 @@ public class ImageController {
     private final ImageService imageService;
     private final CommentService commentService;
 
-    // ---------------------- IMAGES ----------------------
-
     @PostMapping(value = "/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<UploadResponseDto> uploadImage(
             @RequestHeader(name = "Authorization", required = false) String authHeader,
@@ -83,8 +81,6 @@ public class ImageController {
         return ResponseEntity.ok(resp);
     }
 
-    // ---------------------- LIKES ----------------------
-
     @PostMapping("/images/{id}/likes")
     public ResponseEntity<Void> toggleLike(
             @RequestHeader(name = "Authorization", required = false) String authHeader,
@@ -99,8 +95,6 @@ public class ImageController {
     public ResponseEntity<LikesCountDto> countLikes(@PathVariable("id") UUID imageId) {
         return ResponseEntity.ok(new LikesCountDto(likeService.countLikes(imageId)));
     }
-
-    // ---------------------- COMMENTS ----------------------
 
     @PostMapping("/images/{id}/comments")
     public ResponseEntity<CommentDto> addComment(
@@ -139,8 +133,6 @@ public class ImageController {
         commentService.deleteComment(imageId, commentId, userId);
         return ResponseEntity.noContent().build();
     }
-
-    // ---------------------- UTILS ----------------------
 
     private UUID extractUserIdFromAuthHeader(String authHeader) {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
