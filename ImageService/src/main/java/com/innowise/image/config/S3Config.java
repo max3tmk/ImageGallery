@@ -18,7 +18,7 @@ public class S3Config {
     @Bean
     public S3Client s3Client(S3Properties properties) {
         S3Configuration s3config = S3Configuration.builder()
-                .pathStyleAccessEnabled(true) // нужно для LocalStack
+                .pathStyleAccessEnabled(true)
                 .build();
 
         return S3Client.builder()

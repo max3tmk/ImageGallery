@@ -4,6 +4,7 @@ import com.innowise.common.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
+import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.core.Ordered;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -21,21 +22,22 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
     private final JwtUtil jwtUtil;
 
     @Override
-    public Mono<Void> filter(ServerWebExchange exchange, org.springframework.cloud.gateway.filter.GatewayFilterChain chain) {
-        if (isPublicPath(exchange)) {
+    public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+        String path = exchange.getRequest().getURI().getPath();
+        if (isPublicPath(path)) {
             return chain.filter(exchange);
         }
 
         String authHeader = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
-
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             return onError(exchange);
         }
 
         String token = authHeader.substring(7);
-
         String username = jwtUtil.extractUsername(token);
+
         if (username == null || !jwtUtil.validateToken(token, username)) {
+            log.warn("Invalid token for user {}", username);
             return onError(exchange);
         }
 
@@ -50,12 +52,9 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
         return chain.filter(newExchange);
     }
 
-    private boolean isPublicPath(ServerWebExchange exchange) {
-        String path = exchange.getRequest().getURI().getPath();
-        return path.startsWith("/api/auth/register") ||
-                path.startsWith("/api/auth/login") ||
-                path.startsWith("/api/auth/validate") ||
-                path.startsWith("/api/auth/refresh");
+    private boolean isPublicPath(String path) {
+        return path.startsWith("/api/auth/login") ||
+               path.startsWith("/api/auth/register");
     }
 
     private Mono<Void> onError(ServerWebExchange exchange) {

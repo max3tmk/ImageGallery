@@ -1,16 +1,20 @@
 package com.innowise.auth.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import lombok.Builder;
-import lombok.Getter;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import lombok.*;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 @Getter
+@Setter
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class ErrorResponse {
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime timestamp;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
+    private OffsetDateTime timestamp;
     private int status;
     private String error;
     private String message;

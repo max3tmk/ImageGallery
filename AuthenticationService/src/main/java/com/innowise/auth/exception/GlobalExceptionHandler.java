@@ -11,9 +11,10 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.Map;
+
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -32,70 +33,85 @@ public class GlobalExceptionHandler {
         Map<String, String> errors = new HashMap<>();
         ex.getBindingResult().getAllErrors().forEach((error) -> {
             String fieldName = ((FieldError) error).getField();
-            String[] codes = error.getCodes();
             String message = null;
 
-            if (codes != null) {
-                for (String code : codes) {
-                    message = messageSource.getMessage(
-                            code,
-                            null,
-                            null,
-                            LocaleContextHolder.getLocale()
-                    );
+            if (error.getCodes() != null) {
+                for (String code : error.getCodes()) {
+                    message = messageSource.getMessage(code, null, null, LocaleContextHolder.getLocale());
                     if (message != null) break;
                 }
             }
-
-            if (message == null) {
-                message = error.getDefaultMessage();
-            }
-
+            if (message == null) message = error.getDefaultMessage();
             errors.put(fieldName, message);
         });
 
         String combinedMessage = errors.entrySet().stream()
-                .map(entry -> entry.getKey() + ": " + entry.getValue())
+                .map(e -> e.getKey() + ": " + e.getValue())
                 .reduce((a, b) -> a + "; " + b)
                 .orElse("Validation failed");
 
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, combinedMessage, request);
+    }
+
+    @ExceptionHandler(UserAlreadyExistsException.class)
+    public ResponseEntity<ErrorResponse> handleUserAlreadyExists(UserAlreadyExistsException ex, HttpServletRequest request) {
+        return buildErrorResponse(HttpStatus.CONFLICT, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidCredentials(InvalidCredentialsException ex, HttpServletRequest request) {
+        return buildErrorResponse(HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleUserNotFound(UserNotFoundException ex, HttpServletRequest request) {
         ErrorResponse response = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
-                .status(HttpStatus.BAD_REQUEST.value())
-                .error("Bad Request")
-                .message(combinedMessage)
+                .timestamp(OffsetDateTime.now())
+                .status(HttpStatus.NOT_FOUND.value())
+                .error(HttpStatus.NOT_FOUND.getReasonPhrase())
+                .message(ex.getMessage())
                 .path(request.getRequestURI())
                 .build();
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+    }
 
-        return ResponseEntity.badRequest().body(response);
+    @ExceptionHandler(RefreshTokenException.class)
+    public ResponseEntity<ErrorResponse> handleRefreshToken(RefreshTokenException ex, HttpServletRequest request) {
+        ErrorResponse response = ErrorResponse.builder()
+                .timestamp(OffsetDateTime.now())
+                .status(HttpStatus.UNAUTHORIZED.value())
+                .error(HttpStatus.UNAUTHORIZED.getReasonPhrase())
+                .message(ex.getMessage())
+                .path(request.getRequestURI())
+                .build();
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
     }
 
     @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<ErrorResponse> handleRuntimeException(
-            RuntimeException ex,
-            HttpServletRequest request
-    ) {
-        String message = ex.getMessage() != null ? ex.getMessage() : "Internal server error";
+    public ResponseEntity<ErrorResponse> handleRuntime(RuntimeException ex, HttpServletRequest request) {
+        return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage(), request);
+    }
 
-        HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
-        if (message.contains("already taken")) {
-            status = HttpStatus.CONFLICT;
-        } else if (message.contains("Invalid username or password") ||
-                message.contains("Refresh token is missing") ||
-                message.contains("Invalid or expired refresh token")) {
-            status = HttpStatus.UNAUTHORIZED;
-        } else if (message.contains("User not found")) {
-            status = HttpStatus.NOT_FOUND;
-        }
-
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleOtherExceptions(Exception ex, HttpServletRequest request) {
         ErrorResponse response = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
+                .timestamp(OffsetDateTime.now())
+                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                .error(HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase())
+                .message("Unexpected error")
+                .path(request.getRequestURI())
+                .build();
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+    }
+
+    private ResponseEntity<ErrorResponse> buildErrorResponse(HttpStatus status, String message, HttpServletRequest request) {
+        ErrorResponse response = ErrorResponse.builder()
+                .timestamp(OffsetDateTime.now())
                 .status(status.value())
                 .error(status.getReasonPhrase())
                 .message(message)
                 .path(request.getRequestURI())
                 .build();
-
         return ResponseEntity.status(status).body(response);
     }
 }
