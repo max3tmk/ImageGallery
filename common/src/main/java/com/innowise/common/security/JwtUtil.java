@@ -3,6 +3,7 @@ package com.innowise.common.security;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -24,17 +25,14 @@ public class JwtUtil {
     @Value("${jwt.refresh-token-expiration:604800000}")
     private long refreshTokenExpiration;
 
-    private volatile SecretKey key;
+    private SecretKey key;
+
+    @PostConstruct
+    public void init() {
+        this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+    }
 
     private SecretKey getKey() {
-        if (key == null) {
-            synchronized (this) {
-                if (key == null) {
-                    byte[] bytes = secret.getBytes(StandardCharsets.UTF_8);
-                    key = Keys.hmacShaKeyFor(bytes);
-                }
-            }
-        }
         return key;
     }
 
@@ -74,7 +72,7 @@ public class JwtUtil {
     public boolean validateToken(String token) {
         try {
             Claims claims = extractAllClaims(token);
-            return (claims != null) && !isTokenExpired(claims);
+            return (claims != null) && isTokenNotExpired(claims);
         } catch (Exception e) {
             return false;
         }
@@ -93,8 +91,8 @@ public class JwtUtil {
                 .getPayload();
     }
 
-    private boolean isTokenExpired(Claims claims) {
+    private boolean isTokenNotExpired(Claims claims) {
         Date exp = claims.getExpiration();
-        return exp == null || exp.before(new Date());
+        return exp != null && !exp.before(new Date());
     }
 }
