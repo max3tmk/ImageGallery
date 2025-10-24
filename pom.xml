@@ -35,7 +35,6 @@
         <jjwt.version>0.12.5</jjwt.version>
         <liquibase.version>4.27.0</liquibase.version>
         <lombok.version>1.18.42</lombok.version>
-        <testcontainers.version>1.21.3</testcontainers.version>
         <software.amazon.awssdk.version>2.34.6</software.amazon.awssdk.version>
         <modelmapper.version>3.2.5</modelmapper.version>
 
@@ -43,6 +42,7 @@
         <junit.jupiter.version>5.10.0</junit.jupiter.version>
         <mockito.version>5.5.0</mockito.version>
         <spring.test.version>${spring-boot.version}</spring.test.version>
+        <testcontainers.version>1.21.3</testcontainers.version>
     </properties>
 
     <dependencyManagement>

@@ -1,14 +1,18 @@
 package com.innowise.image.service.impl;
 
-import com.innowise.image.service.S3Service;
 import com.innowise.image.config.S3Properties;
+import com.innowise.image.service.S3Service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.*;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
+import software.amazon.awssdk.services.s3.model.ObjectCannedACL;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.S3Exception;
 
-import java.io.IOException;
 import java.net.URI;
 
 @Service
@@ -19,7 +23,7 @@ public class S3ServiceImpl implements S3Service {
     private final S3Properties properties;
 
     @Override
-    public String upload(byte[] data, String key, String contentType) throws IOException {
+    public String upload(byte[] data, String key, String contentType) {
         PutObjectRequest req = PutObjectRequest.builder()
                 .bucket(properties.bucket())
                 .key(key)

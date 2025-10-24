@@ -48,7 +48,6 @@ export const uploadImage = createAsyncThunk(
     }
 );
 
-// === Slice ===
 const imagesSlice = createSlice({
     name: "images",
     initialState: {
@@ -60,7 +59,6 @@ const imagesSlice = createSlice({
     reducers: {},
     extraReducers: (builder) => {
         builder
-            // Fetch all
             .addCase(fetchAllImages.pending, (state) => {
                 state.status = "loading";
             })
@@ -73,7 +71,6 @@ const imagesSlice = createSlice({
                 state.error = action.payload;
             })
 
-            // Fetch user
             .addCase(fetchUserImages.pending, (state) => {
                 state.status = "loading";
             })
@@ -86,7 +83,6 @@ const imagesSlice = createSlice({
                 state.error = action.payload;
             })
 
-            // Upload image
       .addCase(uploadImage.pending, (state) => {
         state.status = "loading";
       })

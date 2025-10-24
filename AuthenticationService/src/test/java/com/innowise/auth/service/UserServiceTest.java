@@ -17,8 +17,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
@@ -56,8 +62,6 @@ class UserServiceTest {
         user.setEmail("john@example.com");
         user.setPassword("encoded");
     }
-
-    // ---------------- REGISTER ----------------
 
     @Test
     void register_ShouldCreateUser_WhenValidData() {
@@ -98,8 +102,6 @@ class UserServiceTest {
         verify(userRepository, never()).save(any());
     }
 
-    // ---------------- LOGIN ----------------
-
     @Test
     void login_ShouldReturnTokens_WhenCredentialsValid() {
         when(userRepository.findByUsername("john")).thenReturn(Optional.of(user));
@@ -133,8 +135,6 @@ class UserServiceTest {
 
         assertEquals("Invalid username or password", ex.getMessage());
     }
-
-    // ---------------- REFRESH ----------------
 
     @Test
     void refreshToken_ShouldGenerateNewTokens_WhenValid() {

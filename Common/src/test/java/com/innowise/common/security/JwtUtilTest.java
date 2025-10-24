@@ -12,11 +12,16 @@ import java.time.Instant;
 import java.util.Date;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class JwtUtilTest {
 
     private JwtUtil jwtUtil;
+    private static final String SECRET = "super-secret-key-for-tests-1234567890-super-secret-key-for-tests-1234567890";
 
     @BeforeEach
     void setup() throws Exception {
@@ -24,15 +29,17 @@ class JwtUtilTest {
 
         Field secretField = JwtUtil.class.getDeclaredField("secret");
         secretField.setAccessible(true);
-        secretField.set(jwtUtil, "super-secret-key-for-tests-1234567890");
+        secretField.set(jwtUtil, SECRET);
 
         Field accessExpField = JwtUtil.class.getDeclaredField("accessTokenExpiration");
         accessExpField.setAccessible(true);
-        accessExpField.set(jwtUtil, 60000L); // 1 min
+        accessExpField.set(jwtUtil, 60000L);
 
         Field refreshExpField = JwtUtil.class.getDeclaredField("refreshTokenExpiration");
         refreshExpField.setAccessible(true);
-        refreshExpField.set(jwtUtil, 120000L); // 2 min
+        refreshExpField.set(jwtUtil, 120000L);
+
+        jwtUtil.init();
     }
 
     @Test
@@ -64,8 +71,8 @@ class JwtUtilTest {
     }
 
     @Test
-    void validateToken_ShouldReturnFalse_WhenTokenExpired() throws Exception {
-        SecretKey key = Keys.hmacShaKeyFor("super-secret-key-for-tests-1234567890".getBytes(StandardCharsets.UTF_8));
+    void validateToken_ShouldReturnFalse_WhenTokenExpired() {
+        SecretKey key = Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
 
         String expired = Jwts.builder()
                 .subject("user")
@@ -101,7 +108,7 @@ class JwtUtilTest {
 
     @Test
     void extractUserId_ShouldReturnNull_WhenMissing() {
-        SecretKey key = Keys.hmacShaKeyFor("super-secret-key-for-tests-1234567890".getBytes(StandardCharsets.UTF_8));
+        SecretKey key = Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
 
         String token = Jwts.builder()
                 .subject("no-id-user")

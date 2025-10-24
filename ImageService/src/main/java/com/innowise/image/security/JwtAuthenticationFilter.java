@@ -6,7 +6,6 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -14,7 +13,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.UUID;
 
@@ -22,8 +20,9 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    private static final String JSON_CONTENT_TYPE = "application/json";
-    private static final String MISSING_OR_INVALID_AUTHENTICATION_HEADER = "Missing or invalid Authorization header";
+    private static final String AUTH_SCHEME = "Bearer ";
+    private static final String HEADER_AUTH = "Authorization";
+    private static final String ERROR_JSON_TEMPLATE = "{\"error\":\"%s\"}";
 
     private final JwtUtil jwtUtil;
 
@@ -34,123 +33,82 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String path = request.getRequestURI();
 
-        if (isAuthPath(path)) {
-            handleAuthPath(request, response, filterChain);
+        if (path.startsWith("/actuator/") || path.startsWith("/api/auth/")) {
+            filterChain.doFilter(request, response);
             return;
         }
 
-        String token = extractToken(request, response);
+        String token = extractToken(request);
         if (token == null) {
+            respond401(response, "Missing or invalid Authorization header");
             return;
         }
 
-        if (!isUserAuthorizedForPath(path, token, response)) {
+        String username = jwtUtil.extractUsername(token);
+        UUID tokenUserId = jwtUtil.extractUserId(token);
+        boolean valid;
+        try {
+            valid = jwtUtil.validateToken(token);
+        } catch (Exception e) {
+            valid = false;
+        }
+
+        if (!valid || username == null || tokenUserId == null) {
+            respond401(response, "Invalid or expired token");
             return;
         }
 
-        UsernamePasswordAuthenticationToken authToken = createAuthenticationToken(token);
-        SecurityContextHolder.getContext().setAuthentication(authToken);
-        filterChain.doFilter(request, response);
-    }
-
-    private boolean isAuthPath(String path) {
-        return path.startsWith("/api/auth/");
-    }
-
-    private void handleAuthPath(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-            throws IOException, ServletException {
-        if (SecurityContextHolder.getContext().getAuthentication() == null) {
-            AnonymousAuthenticationToken anon = new AnonymousAuthenticationToken(
-                    "anonymousKey",
-                    "anonymousUser",
-                    Collections.singletonList(new SimpleGrantedAuthority("ROLE_ANONYMOUS"))
-            );
-            SecurityContextHolder.getContext().setAuthentication(anon);
+        if (isRestrictedImagePath(path)) {
+            if (!isUserIdMatch(path, tokenUserId)) {
+                respond403(response, "Access denied");
+                return;
+            }
         }
+
+        UsernamePasswordAuthenticationToken auth =
+                new UsernamePasswordAuthenticationToken(username, null,
+                        Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER")));
+        SecurityContextHolder.getContext().setAuthentication(auth);
+
         filterChain.doFilter(request, response);
     }
 
-    private String extractToken(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        String authHeader = request.getHeader("Authorization");
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            sendJsonError(response, HttpServletResponse.SC_UNAUTHORIZED, MISSING_OR_INVALID_AUTHENTICATION_HEADER);
+    private String extractToken(HttpServletRequest request) {
+        String header = request.getHeader(HEADER_AUTH);
+        if (header == null || !header.startsWith(AUTH_SCHEME)) {
             return null;
         }
-        return authHeader.substring(7).trim();
-    }
-
-    private boolean isUserAuthorizedForPath(String path, String token, HttpServletResponse response) throws IOException {
-        try {
-            String username = jwtUtil.extractUsername(token);
-            UUID userId = jwtUtil.extractUserId(token);
-
-            if (username == null || userId == null) {
-                sendJsonError(response, HttpServletResponse.SC_UNAUTHORIZED, MISSING_OR_INVALID_AUTHENTICATION_HEADER);
-                return false;
-            }
-
-            if (!isTokenValid(token, username)) {
-                sendJsonError(response, HttpServletResponse.SC_UNAUTHORIZED, MISSING_OR_INVALID_AUTHENTICATION_HEADER);
-                return false;
-            }
-
-            if (isRestrictedImagePath(path)) {
-                return isUserAllowedForImageAccess(path, userId, response);
-            }
-
-            return true;
-        } catch (Exception ex) {
-            sendJsonError(response, HttpServletResponse.SC_UNAUTHORIZED, MISSING_OR_INVALID_AUTHENTICATION_HEADER);
-            return false;
-        }
-    }
-
-    private boolean isTokenValid(String token, String username) {
-        try {
-            return jwtUtil.validateToken(token);
-        } catch (NoSuchMethodError | AbstractMethodError e) {
-            return jwtUtil.validateToken(token, username);
-        }
+        return header.substring(AUTH_SCHEME.length()).trim();
     }
 
     private boolean isRestrictedImagePath(String path) {
-        if (!path.startsWith("/api/user/")) {
-            return false;
-        }
-
-        String[] segments = path.split("/");
-        return segments.length >= 4 && "images".equals(segments[4]);
+        if (!path.startsWith("/api/user/")) return false;
+        String[] seg = path.split("/");
+        return seg.length >= 5 && "images".equals(seg[4]);
     }
 
-    private boolean isUserAllowedForImageAccess(String path, UUID userId, HttpServletResponse response) throws IOException {
+    private boolean isUserIdMatch(String path, UUID tokenUserId) {
         String[] segments = path.split("/");
         if (segments.length > 3) {
             String pathUserId = segments[3];
-            if (!userId.toString().equals(pathUserId)) {
-                sendJsonError(response, HttpServletResponse.SC_FORBIDDEN, "Access denied");
-                return false;
-            }
+            return tokenUserId.toString().equals(pathUserId);
         }
-        return true;
+        return false;
     }
 
-    private UsernamePasswordAuthenticationToken createAuthenticationToken(String token) {
-        String username = jwtUtil.extractUsername(token);
-        return new UsernamePasswordAuthenticationToken(username, null,
-                Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER")));
+    private void respond401(HttpServletResponse response, String message) throws IOException {
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType("application/json");
+        response.getWriter().write(String.format(ERROR_JSON_TEMPLATE, escape(message)));
     }
 
-    private void sendJsonError(HttpServletResponse response, int status, String message) throws IOException {
-        response.setStatus(status);
-        response.setContentType(JSON_CONTENT_TYPE);
-        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-        String payload = "{\"message\":\"" + escapeJson(message) + "\"}";
-        response.getWriter().write(payload);
-        response.getWriter().flush();
+    private void respond403(HttpServletResponse response, String message) throws IOException {
+        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+        response.setContentType("application/json");
+        response.getWriter().write(String.format(ERROR_JSON_TEMPLATE, escape(message)));
     }
 
-    private String escapeJson(String s) {
-        if (s == null) return "";
-        return s.replace("\\", "\\\\").replace("\"", "\\\"");
+    private String escape(String s) {
+        return s == null ? "" : s.replace("\"", "\\\"");
     }
 }

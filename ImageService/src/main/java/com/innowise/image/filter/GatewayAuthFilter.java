@@ -13,6 +13,8 @@ import java.io.IOException;
 @Component
 public class GatewayAuthFilter implements Filter {
 
+    private static final String USER_IMAGES_URL_PATTERN = "^/api/user/[^/]+/images.*$";
+
     @Override
     public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain)
             throws IOException, ServletException {
@@ -28,7 +30,7 @@ public class GatewayAuthFilter implements Filter {
         }
 
         String path = request.getRequestURI();
-        if (path.matches("^/api/user/[^/]+/images.*$")) {
+        if (path.matches(USER_IMAGES_URL_PATTERN)) {
             String userIdInPath = path.split("/")[3];
             if (!userIdHeader.equals(userIdInPath)) {
                 response.setStatus(HttpServletResponse.SC_FORBIDDEN);

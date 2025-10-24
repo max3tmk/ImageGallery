@@ -57,8 +57,6 @@ class AuthControllerTest {
         objectMapper = new ObjectMapper();
     }
 
-    // ---------------- REGISTER ----------------
-
     @Test
     void register_ShouldReturnCreated_WhenValidRequest() throws Exception {
         RegisterRequest request = new RegisterRequest();
@@ -93,8 +91,6 @@ class AuthControllerTest {
                 .andExpect(status().is5xxServerError());
     }
 
-    // ---------------- LOGIN ----------------
-
     @Test
     void login_ShouldReturnTokens_WhenValidCredentials() throws Exception {
         LoginRequest request = new LoginRequest();
@@ -126,8 +122,6 @@ class AuthControllerTest {
                 .andExpect(status().is5xxServerError());
     }
 
-    // ---------------- VALIDATE ----------------
-
     @Test
     void validateToken_ShouldReturnTrue_WhenTokenValid() throws Exception {
         String token = "Bearer validToken";
@@ -153,8 +147,6 @@ class AuthControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.valid").value(false));
     }
-
-    // ---------------- REFRESH ----------------
 
     @Test
     void refreshToken_ShouldReturnNewTokens_WhenValidRefreshToken() throws Exception {

@@ -27,8 +27,17 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class ImageServiceImplTest {
 
@@ -49,17 +58,14 @@ class ImageServiceImplTest {
         UUID userId = UUID.randomUUID();
         MockMultipartFile file = new MockMultipartFile("file", "photo.jpg", "image/jpeg", "abcd".getBytes());
 
-        // mock S3 putObject
         when(s3Client.putObject(any(PutObjectRequest.class), any(RequestBody.class)))
                 .thenReturn(PutObjectResponse.builder().build());
 
-        // mock utilities().getUrl
         S3Utilities utilities = mock(S3Utilities.class);
         when(s3Client.utilities()).thenReturn(utilities);
         when(utilities.getUrl(ArgumentMatchers.<Consumer<GetUrlRequest.Builder>>any()))
                 .thenReturn(new URL("http://example.com/photo.jpg"));
 
-        // mock repository save
         ImageEntity savedEntity = new ImageEntity();
         UUID generatedId = UUID.randomUUID();
         savedEntity.setId(generatedId);
