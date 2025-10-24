@@ -32,16 +32,16 @@ public class JwtUtil {
         this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
+    private SecretKey getKey() {
+        return key;
+    }
+
     public String generateToken(String username, UUID userId) {
         return buildToken(username, userId, accessTokenExpiration);
     }
 
     public String generateRefreshToken(String username, UUID userId) {
         return buildToken(username, userId, refreshTokenExpiration);
-    }
-
-    private SecretKey getKey() {
-        return key;
     }
 
     private String buildToken(String username, UUID userId, long expirationMillis) {
