@@ -3,7 +3,7 @@
 # Push changes from Monorepo into individual module repositories
 # Preserves commit history using git subtree
 # For main branch: push directly without PR
-# For feature branches: push to module branch and create PR
+# For feature branches: push to module branch and create PR with reviewers
 
 set -e
 
@@ -27,6 +27,9 @@ MODULES["Common"]="git@github.com:max3tmk/Common.git"
 MODULES["ImageService"]="git@github.com:max3tmk/ImageService.git"
 MODULES["frontend"]="git@github.com:max3tmk/frontend.git"
 
+# Reviewers for PRs
+REVIEWERS=("AleksandrDInno")
+
 for module in "${!MODULES[@]}"; do
     REMOTE_URL=${MODULES[$module]}
     echo "Processing module: $module"
@@ -45,10 +48,21 @@ for module in "${!MODULES[@]}"; do
         # Feature branch: push to same branch in module and create PR
         echo "Pushing $module to branch $MONO_BRANCH and creating PR..."
         git subtree split --prefix="$module" -b temp_split_branch
-        git push -u "$REMOTE_URL" temp_split_branch:"$MONO_BRANCH" --force
-        # Create PR using GitHub CLI
+
+        # Push to remote branch without force
+        git push -u "$REMOTE_URL" temp_split_branch:"$MONO_BRANCH"
+
+        # Create PR with reviewers
         PR_BODY=$(git log --format="%h %s" origin/main..temp_split_branch)
-        gh pr create --repo "$REMOTE_URL" --base main --head "$MONO_BRANCH" --title "$MONO_BRANCH" --body "$PR_BODY"
+        gh pr create \
+            --repo "$REMOTE_URL" \
+            --base main \
+            --head "$MONO_BRANCH" \
+            --title "$MONO_BRANCH" \
+            --body "$PR_BODY" \
+            --reviewer $(IFS=, ; echo "${REVIEWERS[*]}")
+
+        # Delete temporary branch
         git branch -D temp_split_branch
     fi
 done
