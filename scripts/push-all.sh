@@ -3,7 +3,8 @@
 # Push changes from Monorepo into individual module repositories
 # Preserves commit history using git subtree
 # For main branch: push directly without PR
-# For feature branches: push to module branch and create PR with reviewers
+# For feature branches: push to module branch and create PR
+# Safe to run multiple times
 
 set -e
 
@@ -27,8 +28,8 @@ MODULES["Common"]="git@github.com:max3tmk/Common.git"
 MODULES["ImageService"]="git@github.com:max3tmk/ImageService.git"
 MODULES["frontend"]="git@github.com:max3tmk/frontend.git"
 
-# Reviewers for PRs
-REVIEWERS=("AleksandrDInno")
+# GitHub username to assign as reviewer
+REVIEWER="AleksandrDInno"
 
 for module in "${!MODULES[@]}"; do
     REMOTE_URL=${MODULES[$module]}
@@ -40,31 +41,34 @@ for module in "${!MODULES[@]}"; do
         continue
     fi
 
-    # For main branch: direct push subtree
+    cd "$module"
+
     if [ "$MONO_BRANCH" == "main" ]; then
         echo "Pushing $module directly to main branch (preserving history)..."
         git subtree push --prefix="$module" "$REMOTE_URL" main || echo "Nothing to push for $module"
     else
-        # Feature branch: push to same branch in module and create PR
         echo "Pushing $module to branch $MONO_BRANCH and creating PR..."
+        # Create subtree branch
         git subtree split --prefix="$module" -b temp_split_branch
 
-        # Push to remote branch without force
-        git push -u "$REMOTE_URL" temp_split_branch:"$MONO_BRANCH"
+        # Push using --force-with-lease for safety
+        git push -u "$REMOTE_URL" temp_split_branch:"$MONO_BRANCH" --force-with-lease || {
+            echo "Warning: push failed for $module. Check branch $MONO_BRANCH on remote."
+        }
 
-        # Create PR with reviewers
+        # Create PR using GitHub CLI
         PR_BODY=$(git log --format="%h %s" origin/main..temp_split_branch)
-        gh pr create \
-            --repo "$REMOTE_URL" \
-            --base main \
-            --head "$MONO_BRANCH" \
-            --title "$MONO_BRANCH" \
-            --body "$PR_BODY" \
-            --reviewer $(IFS=, ; echo "${REVIEWERS[*]}")
+        set +e
+        gh pr create --repo "$REMOTE_URL" --base main --head "$MONO_BRANCH" --title "$MONO_BRANCH" --body "$PR_BODY" --reviewer "$REVIEWER"
+        if [ $? -ne 0 ]; then
+            echo "Warning: could not assign reviewer $REVIEWER for module $module. Please verify manually."
+        fi
+        set -e
 
-        # Delete temporary branch
         git branch -D temp_split_branch
     fi
+
+    cd ..
 done
 
 # Restore stashed changes if any
