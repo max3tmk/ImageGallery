@@ -49,17 +49,14 @@ class ImageServiceImplTest {
         UUID userId = UUID.randomUUID();
         MockMultipartFile file = new MockMultipartFile("file", "photo.jpg", "image/jpeg", "abcd".getBytes());
 
-        // mock S3 putObject
         when(s3Client.putObject(any(PutObjectRequest.class), any(RequestBody.class)))
                 .thenReturn(PutObjectResponse.builder().build());
 
-        // mock utilities().getUrl
         S3Utilities utilities = mock(S3Utilities.class);
         when(s3Client.utilities()).thenReturn(utilities);
         when(utilities.getUrl(ArgumentMatchers.<Consumer<GetUrlRequest.Builder>>any()))
                 .thenReturn(new URL("http://example.com/photo.jpg"));
 
-        // mock repository save
         ImageEntity savedEntity = new ImageEntity();
         UUID generatedId = UUID.randomUUID();
         savedEntity.setId(generatedId);
@@ -89,7 +86,6 @@ class ImageServiceImplTest {
                 .thenThrow(new RuntimeException("S3 error"));
 
         assertThrows(RuntimeException.class, () -> imageService.uploadImage(file, userId, "desc"));
-
         verify(imageRepository, never()).save(any());
     }
 

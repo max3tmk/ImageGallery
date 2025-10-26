@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ExtendWith(OutputCaptureExtension.class)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class AuthServiceIntegrationTest {
+class AuthServiceIntegrationTest {
 
     @Autowired
     private TestRestTemplate restTemplate;
@@ -48,10 +48,6 @@ public class AuthServiceIntegrationTest {
         HttpEntity<Void> entity = new HttpEntity<>(headers);
         return restTemplate.exchange(refreshUrl, HttpMethod.POST, entity, responseType);
     }
-
-    // =========================
-    // Register tests
-    // =========================
 
     @Test
     @Order(1)
@@ -101,10 +97,6 @@ public class AuthServiceIntegrationTest {
         assertTrue(response.getBody().getMessage().contains("Username already taken: bob4"));
     }
 
-    // =========================
-    // Login tests
-    // =========================
-
     @Test
     @Order(6)
     void login_ShouldWork_WhenCredentialsValid() {
@@ -125,10 +117,6 @@ public class AuthServiceIntegrationTest {
         assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
         assertTrue(response.getBody().getMessage().contains("Invalid username or password"));
     }
-
-    // =========================
-    // Refresh tests
-    // =========================
 
     @Test
     @Order(8)

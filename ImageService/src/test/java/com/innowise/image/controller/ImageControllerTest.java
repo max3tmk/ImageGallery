@@ -30,10 +30,16 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -68,8 +74,6 @@ class ImageControllerTest {
 
         lenient().when(jwtUtil.extractUserId(anyString())).thenReturn(userId);
     }
-
-    // ==================== UPLOAD IMAGE ====================
 
     @Test
     void uploadImage_success() throws Exception {
@@ -130,8 +134,6 @@ class ImageControllerTest {
                 .andExpect(jsonPath("$.message").value("Image already exists"));
     }
 
-    // ==================== GET IMAGE ====================
-
     @Test
     void getImage_success() throws Exception {
         UUID imageId = UUID.randomUUID();
@@ -174,8 +176,6 @@ class ImageControllerTest {
                 .andExpect(jsonPath("$.message").value("Access denied"));
     }
 
-    // ==================== GET USER IMAGES ====================
-
     @Test
     void getUserImages_success() throws Exception {
         ImageDto dto = new ImageDto();
@@ -214,8 +214,6 @@ class ImageControllerTest {
                 .andExpect(status().is5xxServerError());
     }
 
-    // ==================== GET ALL IMAGES ====================
-
     @Test
     void getAllImages_success() throws Exception {
         ImageDto dto = new ImageDto();
@@ -252,8 +250,6 @@ class ImageControllerTest {
                 .andExpect(status().is5xxServerError());
     }
 
-    // ==================== LIKE ====================
-
     @Test
     void toggleLike_success() throws Exception {
         mockMvc.perform(post("/api/images/{id}/likes", UUID.randomUUID())
@@ -278,8 +274,6 @@ class ImageControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.likesCount").value(5));
     }
-
-    // ==================== COMMENTS ====================
 
     @Test
     void addComment_success() throws Exception {
