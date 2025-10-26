@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# PushAll.sh
 # Push changes from Monorepo into individual module repositories
 # Preserves commit history using git subtree
 # For main branch: push directly without PR
