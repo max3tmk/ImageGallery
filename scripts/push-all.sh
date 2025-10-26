@@ -4,9 +4,15 @@
 # Preserves commit history using git subtree
 # For main branch: push directly without PR
 # For feature branches: push to module branch and create PR
-# Safe to run multiple times
+# Safe to re-run multiple times
 
 set -e
+
+# Ensure running from the root of the repository
+if [ ! -d ".git" ]; then
+    echo "ERROR: This script must be run from the root of the Git repository."
+    exit 1
+fi
 
 MONO_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 echo "Current Monorepo branch: $MONO_BRANCH"
@@ -28,7 +34,6 @@ MODULES["Common"]="git@github.com:max3tmk/Common.git"
 MODULES["ImageService"]="git@github.com:max3tmk/ImageService.git"
 MODULES["frontend"]="git@github.com:max3tmk/frontend.git"
 
-# GitHub username to assign as reviewer
 REVIEWER="AleksandrDInno"
 
 for module in "${!MODULES[@]}"; do
@@ -41,34 +46,34 @@ for module in "${!MODULES[@]}"; do
         continue
     fi
 
-    cd "$module"
-
     if [ "$MONO_BRANCH" == "main" ]; then
+        # Push main branch directly
         echo "Pushing $module directly to main branch (preserving history)..."
         git subtree push --prefix="$module" "$REMOTE_URL" main || echo "Nothing to push for $module"
     else
+        # Feature branch: push to same branch in module and create PR
         echo "Pushing $module to branch $MONO_BRANCH and creating PR..."
-        # Create subtree branch
-        git subtree split --prefix="$module" -b temp_split_branch
 
-        # Push using --force-with-lease for safety
-        git push -u "$REMOTE_URL" temp_split_branch:"$MONO_BRANCH" --force-with-lease || {
-            echo "Warning: push failed for $module. Check branch $MONO_BRANCH on remote."
-        }
+        # Create temporary split branch
+        TMP_BRANCH="temp_split_branch_$module"
+        git branch -D "$TMP_BRANCH" 2>/dev/null || true
+        git subtree split --prefix="$module" -b "$TMP_BRANCH"
 
-        # Create PR using GitHub CLI
-        PR_BODY=$(git log --format="%h %s" origin/main..temp_split_branch)
+        # Push to module remote branch
+        git push -u "$REMOTE_URL" "$TMP_BRANCH:$MONO_BRANCH" || echo "Push failed for $module"
+
+        # Create pull request using GitHub CLI
+        PR_BODY=$(git log --format="%h %s" origin/main.."$TMP_BRANCH")
         set +e
         gh pr create --repo "$REMOTE_URL" --base main --head "$MONO_BRANCH" --title "$MONO_BRANCH" --body "$PR_BODY" --reviewer "$REVIEWER"
         if [ $? -ne 0 ]; then
-            echo "Warning: could not assign reviewer $REVIEWER for module $module. Please verify manually."
+            echo "WARNING: Could not assign reviewer $REVIEWER for $module. Please check manually."
         fi
         set -e
 
-        git branch -D temp_split_branch
+        # Delete temporary branch
+        git branch -D "$TMP_BRANCH"
     fi
-
-    cd ..
 done
 
 # Restore stashed changes if any
@@ -77,4 +82,4 @@ if [ "$STASHED" = true ]; then
     git stash pop
 fi
 
-echo "PushAll completed."
+echo "PushAll completed successfully."
