@@ -5,6 +5,7 @@ import com.innowise.image.dto.CommentDto;
 import com.innowise.image.entity.CommentEntity;
 import com.innowise.image.exception.NotFoundException;
 import com.innowise.image.repository.CommentRepository;
+import com.innowise.image.service.KafkaProducerService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -16,8 +17,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -33,6 +37,9 @@ class CommentServiceImplTest {
 
     @Mock
     private AuthServiceClient authServiceClient;
+
+    @Mock
+    private KafkaProducerService kafkaProducerService;
 
     @InjectMocks
     private CommentServiceImpl commentService;
@@ -76,6 +83,8 @@ class CommentServiceImplTest {
         assertEquals("Hello", result.getContent());
         verify(commentRepository, times(1)).save(any(CommentEntity.class));
         verify(modelMapper, times(1)).map(any(CommentEntity.class), eq(CommentDto.class));
+        verify(kafkaProducerService, times(1))
+                .sendCommentEvent(eq(userId), eq(imageId), any(UUID.class), eq("Hello"), eq(true));
     }
 
     @Test
@@ -123,12 +132,15 @@ class CommentServiceImplTest {
         existing.setId(commentId);
         existing.setImageId(imageId);
         existing.setUserId(userId);
+        existing.setContent("Some comment");
 
         when(commentRepository.findByIdAndImageIdAndUserIdOrderByCreatedAtDesc(commentId, imageId, userId))
                 .thenReturn(Optional.of(existing));
         commentService.deleteComment(imageId, commentId, userId);
 
         verify(commentRepository, times(1)).delete(existing);
+        verify(kafkaProducerService, times(1))
+                .sendCommentEvent(eq(userId), eq(imageId), eq(commentId), anyString(), eq(false));
     }
 
     @Test

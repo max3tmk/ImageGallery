@@ -2,6 +2,7 @@ package com.innowise.image.service.impl;
 
 import com.innowise.image.entity.LikeEntity;
 import com.innowise.image.repository.LikeRepository;
+import com.innowise.image.service.KafkaProducerService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -20,6 +21,9 @@ class LikeServiceImplTest {
 
     @Mock
     private LikeRepository likeRepository;
+
+    @Mock
+    private KafkaProducerService kafkaProducerService;
 
     @InjectMocks
     private LikeServiceImpl likeService;

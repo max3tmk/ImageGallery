@@ -26,11 +26,12 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     public CommentDto addComment(UUID imageId, UUID userId, CommentDto request) {
-        CommentEntity comment = new CommentEntity();
-        comment.setImageId(imageId);
-        comment.setUserId(userId);
-        comment.setContent(request.getContent());
-        comment.setCreatedAt(Instant.now());
+        CommentEntity comment = CommentEntity.builder()
+                .imageId(imageId)
+                .userId(userId)
+                .content(request.getContent())
+                .createdAt(Instant.now())
+                .build();
         CommentEntity savedComment = commentRepository.save(comment);
         kafkaProducerService.sendCommentEvent(userId, imageId, savedComment.getId(), request.getContent(), true);
 
