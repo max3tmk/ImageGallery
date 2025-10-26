@@ -26,7 +26,6 @@ public class JwtUtil {
     private long refreshTokenExpiration;
 
     private SecretKey key;
-<<<<<<< HEAD
 
     @PostConstruct
     public void init() {
@@ -35,12 +34,6 @@ public class JwtUtil {
 
     private SecretKey getKey() {
         return key;
-=======
-
-    @PostConstruct
-    public void init() {
-        this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
->>>>>>> 1feb114 (code refactoring to prevent SonarQube warnings)
     }
 
     public String generateToken(String username, UUID userId) {
@@ -49,10 +42,6 @@ public class JwtUtil {
 
     public String generateRefreshToken(String username, UUID userId) {
         return buildToken(username, userId, refreshTokenExpiration);
-    }
-
-    private SecretKey getKey() {
-        return key;
     }
 
     private String buildToken(String username, UUID userId, long expirationMillis) {
