@@ -13,6 +13,7 @@
         <module>AuthenticationService</module>
         <module>APIGatewayService</module>
         <module>ImageService</module>
+        <module>ActivityService</module>
     </modules>
 
     <properties>
@@ -27,6 +28,10 @@
         <maven.compiler.release>${java.version}</maven.compiler.release>
         <maven.compiler.plugin.version>3.13.0</maven.compiler.plugin.version>
 
+        <!-- Kotlin -->
+        <kotlin.version>2.0.21</kotlin.version>
+        <kotlin.compiler.jvmTarget>17</kotlin.compiler.jvmTarget>
+
         <!-- Encoding -->
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -38,6 +43,8 @@
         <testcontainers.version>1.21.3</testcontainers.version>
         <software.amazon.awssdk.version>2.34.6</software.amazon.awssdk.version>
         <modelmapper.version>3.2.5</modelmapper.version>
+        <jackson.version>2.17.2</jackson.version>
+        <flapdoodle.embed.mongo.version>4.6.1</flapdoodle.embed.mongo.version>
 
         <!-- Test libraries -->
         <junit.jupiter.version>5.10.0</junit.jupiter.version>

@@ -71,7 +71,7 @@ class JwtUtilTest {
     }
 
     @Test
-    void validateToken_ShouldReturnFalse_WhenTokenExpired() throws Exception {
+    void validateToken_ShouldReturnFalse_WhenTokenExpired() {
         SecretKey key = Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
 
         String expired = Jwts.builder()

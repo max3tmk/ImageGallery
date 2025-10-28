@@ -1,13 +1,9 @@
 FROM openjdk:17-slim
 
-ARG JAR_FILE=target/*.jar
 WORKDIR /app
 
-COPY ${JAR_FILE} app.jar
-
-RUN chown appuser:appuser app.jar
-
-USER appuser
+COPY target/image-service.jar app.jar
 
 EXPOSE 8081
+
 ENTRYPOINT ["java", "-jar", "app.jar"]

@@ -5,7 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$REPO_ROOT" || exit 1
 
-PORTS_SERVICES="8080:authentication-service 8081:image-service 8085:api-gateway 5432:postgres 4566:localstack 9092:kafka"
+PORTS_SERVICES="8080:authentication-service 8081:image-service 8082:activity-service 8085:api-gateway 5432:postgres 4566:localstack 9092:kafka 27017:mongo"
 
 echo "=== Killing processes on ports (only non-docker processes) ==="
 for entry in $PORTS_SERVICES; do
@@ -40,8 +40,8 @@ docker compose down --remove-orphans
 echo "=== Building Maven projects (common libs etc.) ==="
 mvn -q clean install -DskipTests
 
-echo "=== Starting postgres, localstack and kafka ==="
-docker compose up -d postgres localstack kafka
+echo "=== Starting postgres, localstack, kafka and mongo ==="
+docker compose up -d postgres localstack kafka mongo zookeeper
 
 echo "=== Initializing LocalStack ==="
 until docker exec localstack awslocal s3 ls >/dev/null 2>&1; do
@@ -67,5 +67,12 @@ echo "Kafka port is ready."
 sleep 5
 echo "Kafka should be ready now."
 
-echo "=== LocalStack and Kafka initialization complete ==="
-echo "=== postgres + localstack + kafka restarted (db persisted) ==="
+echo "=== Waiting for MongoDB to be ready ==="
+until nc -z localhost 27017; do
+  echo "Waiting for MongoDB port 27017..."
+  sleep 2
+done
+echo "MongoDB port is ready."
+
+echo "=== LocalStack, Kafka and MongoDB initialization complete ==="
+echo "=== postgres + localstack + kafka + mongo restarted (db persisted) ==="

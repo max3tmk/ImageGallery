@@ -1,0 +1,64 @@
+name: Activity Service CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'ActivityService/**'
+      - 'Common/**'
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608  # v3.6.0 (pinned)
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@5a716f457d8a5a209fc4d44b7f8a4b31f3d9f1b6  # v3.13.0 (pinned)
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build Common Module
+        run: mvn clean install -pl Common -am -DskipTests
+
+      - name: Build with Maven
+        run: mvn clean package -pl ActivityService -DskipTests
+
+      - name: Run Tests
+        run: mvn test -pl ActivityService
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@2b1e43284b74b6e4b58ed3ff1f7f6b8f97bb6e0c  # v2.10.0 (pinned)
+
+      - name: Build Docker image
+        working-directory: ./ActivityService
+        env:
+          IMAGE_NAME: activity-service
+          IMAGE_TAG: ${{ github.sha }}
+          DOCKER_USER: ${{ secrets.DOCKER_USERNAME }}
+        run: |
+          docker build -t "$DOCKER_USER/$IMAGE_NAME:$IMAGE_TAG" .
+
+      - name: Login to Docker Hub
+        if: github.ref == 'refs/heads/main'
+        uses: docker/login-action@3b507f556cebc191e0dcf92d8ae47cbf949e42a3  # v3.2.0 (pinned)
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Push to Docker Hub
+        if: github.ref == 'refs/heads/main'
+        env:
+          IMAGE_NAME: activity-service
+          IMAGE_TAG: ${{ github.sha }}
+          DOCKER_USER: ${{ secrets.DOCKER_USERNAME }}
+        run: |
+          docker push "$DOCKER_USER/$IMAGE_NAME:$IMAGE_TAG"
+          docker tag "$DOCKER_USER/$IMAGE_NAME:$IMAGE_TAG" "$DOCKER_USER/$IMAGE_NAME:latest"
+          docker push "$DOCKER_USER/$IMAGE_NAME:latest"

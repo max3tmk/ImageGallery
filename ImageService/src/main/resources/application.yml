@@ -1,6 +1,5 @@
 server:
-  port: 8081
-
+  port: ${SERVER_PORT:8081}
 spring:
   application:
     name: image-service
@@ -13,37 +12,39 @@ spring:
         spring.json.trusted.packages: com.innowise.image.dto.event
 
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:innowise}
-    username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:postgres}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/innowise}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
-
   jpa:
     hibernate:
       ddl-auto: validate
     show-sql: true
-
   liquibase:
     enabled: false
-
 s3:
   endpoint: ${S3_ENDPOINT:http://localhost:4566}
   region: ${S3_REGION:us-east-1}
   bucket: ${S3_BUCKET:images}
   access-key: ${AWS_ACCESS_KEY_ID:test}
   secret-key: ${AWS_SECRET_ACCESS_KEY:test}
-
 jwt:
   secret: ${JWT_SECRET:k7Hj9mQx2pLw8nRv3sTz5yUc1bNv6mKq4fXr7tYw9eZa2sDf8gHj3kLp0oIu}
-
 cors:
   allowed-origins:
     - "http://localhost:3000"
     - "http://frontend:3000"
-
 auth:
   service:
     url: ${AUTH_SERVICE_URL:http://localhost:8080}
-
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
 kafka:
   bootstrap-servers: localhost:9092

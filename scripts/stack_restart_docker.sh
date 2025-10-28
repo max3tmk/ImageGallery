@@ -5,7 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$REPO_ROOT" || exit 1
 
-PORTS_SERVICES="8080:authentication-service 8081:image-service 8085:api-gateway 5432:postgres 4566:localstack 3000:frontend 9092:kafka"
+PORTS_SERVICES="8080:authentication-service 8081:image-service 8082:activity-service 8085:api-gateway 5432:postgres 4566:localstack 3000:frontend 9092:kafka 27017:mongo"
 
 echo "=== Killing processes on ports (only non-docker processes) ==="
 for entry in $PORTS_SERVICES; do
@@ -68,5 +68,12 @@ done
 echo "Kafka port is ready."
 sleep 5
 echo "Kafka should be ready now."
+
+echo "=== Waiting for MongoDB to be ready ==="
+until nc -z localhost 27017; do
+  echo "Waiting for MongoDB port 27017..."
+  sleep 2
+done
+echo "MongoDB port is ready."
 
 echo "=== Stack restarted successfully (db persisted) ==="

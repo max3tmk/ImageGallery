@@ -1,0 +1,14 @@
+server:
+  port: 8082
+
+spring:
+  data:
+    mongodb:
+      host: ${mongo.host:localhost}
+      port: ${mongo.port:27017}
+      database: ${mongo.database:activitydb}
+      username: ${mongo.username:activityuser}
+      password: ${mongo.password:activitypass}
+      authentication-database: ${mongo.auth-db:activitydb}
+  kafka:
+    bootstrap-servers: ${kafka.bootstrap-servers:localhost:9092}

@@ -27,14 +27,9 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-<<<<<<< HEAD
-      - name: Build entire project
-        run: mvn clean install -DskipTests
-=======
       - name: Build with Maven
         working-directory: ./ImageService
         run: mvn clean package -DskipTests
->>>>>>> 18be2c9 (Add CI/CD pipeline for ImageService)
 
       - name: Run tests
         working-directory: ./ImageService
@@ -49,8 +44,7 @@ jobs:
           mvn verify sonar:sonar \
             -Dsonar.projectKey=max3tmk_ImageGallery \
             -Dsonar.host.url=https://sonarcloud.io \
-            -Dsonar.organization=innowise-max3tmk \
-            -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+            -Dsonar.organization=innowise-max3tmk
 
   build-and-publish-docker:
     needs: build-and-test
@@ -62,16 +56,16 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@2b1e43284b74b6e4b58ed3ff1f7f6b8f97bb6e0c
 
       - name: Login to Docker Hub
-        uses: docker/login-action@v2
+        uses: docker/login-action@3b507f556cebc191e0dcf92d8ae47cbf949e42a3
         with:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@2cdde995ef39b4f2b95db7941f89cfbf6d06d3b1
         with:
           context: ./ImageService
           push: true

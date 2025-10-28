@@ -1,7 +1,7 @@
 package com.innowise.image.service.impl;
 
-import com.innowise.image.dto.event.CommentEventDto;
-import com.innowise.image.dto.event.LikeEventDto;
+import com.innowise.common.dto.event.CommentEventDto;
+import com.innowise.common.dto.event.LikeEventDto;
 import com.innowise.image.service.KafkaProducerService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

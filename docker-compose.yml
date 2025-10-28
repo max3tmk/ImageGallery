@@ -13,6 +13,21 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  mongo:
+    image: mongo:6.0
+    container_name: mongo
+    ports:
+      - "27017:27017"
+    networks:
+      - innowise-network
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:-root}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-password}
+      MONGO_INITDB_DATABASE: activitydb
+    volumes:
+      - mongo_data:/data/db
+      - ./mongo-init:/docker-entrypoint-initdb.d
+
   localstack:
     image: localstack/localstack:4.9.2
     container_name: localstack
@@ -65,11 +80,11 @@ services:
       dockerfile: Dockerfile
     container_name: authentication-service
     environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_NAME: innowise
-      DB_USERNAME: postgres
-      DB_PASSWORD: postgres
+      SERVER_PORT: 8080
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/innowise
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      JWT_SECRET: k7Hj9mQx2pLw8nRv3sTz5yUc1bNv6mKq4fXr7tYw9eZa2sDf8gHj3kLp0oIu
     depends_on:
       - postgres
     ports:
@@ -89,6 +104,7 @@ services:
     environment:
       - AUTH_SERVICE_URL=http://authentication-service:8080
       - IMAGE_SERVICE_URL=http://image-service:8081
+      - ACTIVITY_SERVICE_URL=http://activity-service:8082
     networks:
       - innowise-network
 
@@ -124,6 +140,29 @@ services:
     networks:
       - innowise-network
 
+  activity-service:
+    build:
+      context: ./ActivityService
+      dockerfile: Dockerfile
+    container_name: activity-service
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATA_MONGODB_HOST: mongo
+      SPRING_DATA_MONGODB_PORT: 27017
+      SPRING_DATA_MONGODB_DATABASE: activitydb
+      SPRING_DATA_MONGODB_USERNAME: ${MONGO_ACTIVITY_USER:-activityuser}
+      SPRING_DATA_MONGODB_PASSWORD: ${MONGO_ACTIVITY_PASSWORD:-activitypass}
+      SPRING_DATA_MONGODB_AUTHENTICATION_DATABASE: ${MONGO_AUTH_DB:-activitydb}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    depends_on:
+      - mongo
+      - kafka
+      - zookeeper
+    ports:
+      - "8082:8082"
+    networks:
+      - innowise-network
+
 networks:
   innowise-network:
     driver: bridge
@@ -131,3 +170,4 @@ networks:
 volumes:
   postgres_data:
   localstack_data:
+  mongo_data:

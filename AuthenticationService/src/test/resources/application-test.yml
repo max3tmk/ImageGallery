@@ -1,16 +1,34 @@
+server:
+  port: 8080
 spring:
-  datasource:
-    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;INIT=CREATE SCHEMA IF NOT EXISTS USER_SCHEMA
-    driver-class-name: org.h2.Driver
-    username: sa
-    password:
+  application:
+    name: auth-service
   jpa:
-    database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: validate
+    show-sql: false
     properties:
-      hibernate.default_schema: USER_SCHEMA
-    show-sql: true
-
+      hibernate:
+        format_sql: false
+        default_schema: user_schema
+    open-in-view: false
   liquibase:
-    enabled: false
+    enabled: true
+    drop-first: true
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+jwt:
+  secret: k7Hj9mQx2pLw8nRv3sTz5yUc1bNv6mKq4fXr7tYw9eZa2sDf8gHj3kLp0oIu
+  access-token-expiration: 900000
+  refresh-token-expiration: 604800000
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+logging:
+  level:
+    com.innowise: DEBUG

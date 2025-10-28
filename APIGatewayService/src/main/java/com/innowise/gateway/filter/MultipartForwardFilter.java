@@ -1,5 +1,6 @@
 package com.innowise.gateway.filter;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
 import org.springframework.http.HttpHeaders;
@@ -16,6 +17,9 @@ public class MultipartForwardFilter implements GlobalFilter, Ordered {
 
     private final WebClient webClient;
 
+    @Value("${app.image-service.url:http://localhost:8081}")
+    private String imageServiceUrl;
+
     public MultipartForwardFilter(WebClient.Builder webClientBuilder) {
         this.webClient = webClientBuilder.build();
     }
@@ -26,7 +30,7 @@ public class MultipartForwardFilter implements GlobalFilter, Ordered {
             return chain.filter(exchange);
         }
 
-        String targetUrl = "http://localhost:8081" + exchange.getRequest().getURI().getPath();
+        String targetUrl = imageServiceUrl + exchange.getRequest().getURI().getPath();
 
         return webClient.method(exchange.getRequest().getMethod())
                 .uri(targetUrl)
