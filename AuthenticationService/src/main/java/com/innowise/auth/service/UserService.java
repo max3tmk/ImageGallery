@@ -4,15 +4,22 @@ import com.innowise.auth.dto.AuthResponse;
 import com.innowise.auth.dto.LoginRequest;
 import com.innowise.auth.dto.RegisterRequest;
 import com.innowise.auth.entity.User;
+import com.innowise.auth.exception.InvalidCredentialsException;
+import com.innowise.auth.exception.RefreshTokenException;
+import com.innowise.auth.exception.UserAlreadyExistsException;
+import com.innowise.auth.exception.UserNotFoundException;
 import com.innowise.auth.repository.UserRepository;
 import com.innowise.common.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -24,11 +31,11 @@ public class UserService {
     @Transactional
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByUsername(request.getUsername())) {
-            throw new RuntimeException("Username already taken: " + request.getUsername());
+            throw new UserAlreadyExistsException("Username already taken: " + request.getUsername());
         }
 
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email already taken: " + request.getEmail());
+            throw new UserAlreadyExistsException("Email already taken: " + request.getEmail());
         }
 
         User user = new User();
@@ -41,41 +48,52 @@ public class UserService {
         String accessToken = jwtUtil.generateToken(user.getUsername(), userId);
         String refreshToken = jwtUtil.generateRefreshToken(user.getUsername(), userId);
 
-        return new AuthResponse(accessToken, refreshToken);
+        return new AuthResponse(accessToken, refreshToken, userId.toString());
     }
 
     public AuthResponse login(LoginRequest request) {
         User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new RuntimeException("Invalid username or password"));
+                .orElseThrow(() -> new InvalidCredentialsException("Invalid username or password"));
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new RuntimeException("Invalid username or password");
+            throw new InvalidCredentialsException("Invalid username or password");
         }
 
         UUID userId = user.getId();
         String accessToken = jwtUtil.generateToken(user.getUsername(), userId);
         String refreshToken = jwtUtil.generateRefreshToken(user.getUsername(), userId);
 
-        return new AuthResponse(accessToken, refreshToken);
+        return new AuthResponse(accessToken, refreshToken, userId.toString());
     }
 
     public AuthResponse refreshToken(String refreshToken) {
         if (refreshToken == null || refreshToken.isBlank()) {
-            throw new RuntimeException("Refresh token is missing");
+            throw new RefreshTokenException("Refresh token is missing");
         }
 
-        String username = jwtUtil.extractUsername(refreshToken);
-        if (!jwtUtil.validateToken(refreshToken, username)) {
-            throw new RuntimeException("Invalid or expired refresh token");
+        String username;
+        try {
+            username = jwtUtil.extractUsername(refreshToken);
+        } catch (Exception e) {
+            throw new RefreshTokenException("Invalid refresh token");
+        }
+
+        if (username == null || !jwtUtil.validateToken(refreshToken, username)) {
+            throw new RefreshTokenException("Invalid refresh token");
         }
 
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found: " + username));
+                .orElseThrow(() -> new UserNotFoundException("User not found: " + username));
 
         UUID userId = user.getId();
         String newAccessToken = jwtUtil.generateToken(username, userId);
         String newRefreshToken = jwtUtil.generateRefreshToken(username, userId);
 
-        return new AuthResponse(newAccessToken, newRefreshToken);
+        return new AuthResponse(newAccessToken, newRefreshToken, userId.toString());
+    }
+
+    public Optional<String> getUsernameById(UUID userId) {
+        return userRepository.findById(userId)
+                .map(User::getUsername);
     }
 }

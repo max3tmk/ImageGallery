@@ -1,16 +1,13 @@
 server:
-  port: 8080
-
+  port: ${SERVER_PORT:8080}
 spring:
   application:
     name: auth-service
-
   datasource:
-    url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/innowise}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
-
   jpa:
     hibernate:
       ddl-auto: none
@@ -18,17 +15,24 @@ spring:
     properties:
       hibernate:
         format_sql: true
+        default_schema: user_schema
     open-in-view: false
-
   sql:
     init:
       mode: never
-
   liquibase:
     enabled: true
     change-log: classpath:db/changelog/db.changelog-master.yaml
-
 jwt:
-  secret: k7Hj9mQx2pLw8nRv3sTz5yUc1bNv6mKq4fXr7tYw9eZa2sDf8gHj3kLp0oIu
-  access-token-expiration: 900000    # 15 minutes
-  refresh-token-expiration: 604800000 # 7 days
+  secret: ${JWT_SECRET:k7Hj9mQx2pLw8nRv3sTz5yUc1bNv6mKq4fXr7tYw9eZa2sDf8gHj3kLp0oIu}
+  access-token-expiration: ${JWT_ACCESS_EXPIRATION:900000}
+  refresh-token-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always

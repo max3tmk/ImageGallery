@@ -1,0 +1,34 @@
+server:
+  port: 8080
+spring:
+  application:
+    name: auth-service
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        default_schema: user_schema
+    open-in-view: false
+  liquibase:
+    enabled: true
+    drop-first: true
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+jwt:
+  secret: k7Hj9mQx2pLw8nRv3sTz5yUc1bNv6mKq4fXr7tYw9eZa2sDf8gHj3kLp0oIu
+  access-token-expiration: 900000
+  refresh-token-expiration: 604800000
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+logging:
+  level:
+    com.innowise: DEBUG

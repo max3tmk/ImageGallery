@@ -18,12 +18,16 @@ public class SecurityConfig {
     private String allowedOrigins;
 
     @Bean
+    @SuppressWarnings("java:S4502")
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
                 .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
-                .authorizeExchange(exchange -> exchange.anyExchange().permitAll())
+                .authorizeExchange(ex -> ex
+                        .pathMatchers("/actuator/**").permitAll()
+                        .anyExchange().permitAll()
+                )
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .build();
     }

@@ -1,30 +1,36 @@
 server:
-  port: 8085
-
+  port: ${SERVER_PORT:8085}
 app:
   cors:
-    allowed-origins: "http://localhost:3000"
-
+    allowed-origins: ${CORS_ORIGINS:http://localhost:3000}
 spring:
   application:
     name: api-gateway
-
   cloud:
     gateway:
       server:
         webflux:
           routes:
             - id: auth-service
-              uri: ${AUTH_SERVICE_URL:http://localhost:8080}
+              uri: ${AUTH_SERVICE_URL:http://auth-service:8080}
               predicates:
                 - Path=/api/auth/**
             - id: image-service
-              uri: ${IMAGE_SERVICE_URL:http://localhost:8081}
+              uri: ${IMAGE_SERVICE_URL:http://image-service:8081}
               predicates:
                 - Path=/api/images/**
-
+                - Path=/api/user/*/images
   liquibase:
     enabled: false
-
 jwt:
-  secret: k7Hj9mQx2pLw8nRv3sTz5yUc1bNv6mKq4fXr7tYw9eZa2sDf8gHj3kLp0oIu
+  secret: ${JWT_SECRET:k7Hj9mQx2pLw8nRv3sTz5yUc1bNv6mKq4fXr7tYw9eZa2sDf8gHj3kLp0oIu}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always

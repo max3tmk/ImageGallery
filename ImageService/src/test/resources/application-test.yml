@@ -1,0 +1,50 @@
+server:
+  port: ${SERVER_PORT:8081}
+
+spring:
+  application:
+    name: image-service
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: gallery
+  liquibase:
+    enabled: true
+    drop-first: true
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+  security:
+    ignored:
+      - /actuator/**
+      - /actuator/health
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.actuate.autoconfigure.security.servlet.ManagementWebSecurityAutoConfiguration
+      - org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
+s3:
+  endpoint: ${S3_ENDPOINT:http://localhost:4566}
+  region: ${S3_REGION:us-east-1}
+jwt:
+  secret: k7Hj9mQx2pLw8nRv3sTz5yUc1bNv6mKq4fXr7tYw9eZa2sDf8gHj3kLp0oIu
+auth:
+  service:
+    url: ${AUTH_SERVICE_URL}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+      enabled: true
+  security:
+    enabled: false
+logging:
+  level:
+    root: DEBUG
+    org.springframework: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.boot.actuate: DEBUG
