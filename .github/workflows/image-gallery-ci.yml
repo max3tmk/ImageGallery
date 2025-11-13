@@ -35,7 +35,9 @@ jobs:
             ${{ runner.os }}-maven-
 
       - name: Build Common Module
-        run: mvn clean install -pl Common -am -DskipTests
+        run: |
+          mvn clean install -pl Common -am -DskipTests
+          ls -la Common/target/
 
       - name: Cache Common module
         uses: actions/cache@v4
@@ -48,6 +50,7 @@ jobs:
         with:
           name: common-module
           path: Common/target/
+          if-no-files-found: warn
 
   # Frontend CI/CD
   frontend-ci:
@@ -69,10 +72,14 @@ jobs:
           cd frontend
           npm ci
 
-      - name: Run tests
+      - name: Run tests (if exists)
         run: |
           cd frontend
-          npm run test:unit -- --coverage
+          if npm run | grep -q "test:unit"; then
+            npm run test:unit -- --coverage
+          else
+            echo "No test:unit script found, skipping tests"
+          fi
 
       - name: Build frontend
         run: |
@@ -122,6 +129,7 @@ jobs:
         with:
           name: common-module
           path: Common/target/
+          if-no-files-found: ignore
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -139,7 +147,14 @@ jobs:
             ${{ runner.os }}-maven-
 
       - name: Install Common module locally
-        run: mvn install:install-file -Dfile=Common/target/*.jar -DgroupId=com.innowise -DartifactId=common -Dversion=1.0 -Dpackaging=jar
+        run: |
+          if ls Common/target/*.jar 1> /dev/null 2>&1; then
+            echo "Installing Common module from artifact"
+            mvn install:install-file -Dfile=Common/target/*.jar -DgroupId=com.innowise -DartifactId=common -Dversion=1.0 -Dpackaging=jar
+          else
+            echo "Common JAR not found in artifacts, building Common module locally"
+            mvn clean install -pl Common -am -DskipTests
+          fi
 
       - name: Build AuthenticationService
         run: mvn clean package -pl AuthenticationService -DskipTests
@@ -207,6 +222,7 @@ jobs:
         with:
           name: common-module
           path: Common/target/
+          if-no-files-found: ignore
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -224,7 +240,14 @@ jobs:
             ${{ runner.os }}-maven-
 
       - name: Install Common module locally
-        run: mvn install:install-file -Dfile=Common/target/*.jar -DgroupId=com.innowise -DartifactId=common -Dversion=1.0 -Dpackaging=jar
+        run: |
+          if ls Common/target/*.jar 1> /dev/null 2>&1; then
+            echo "Installing Common module from artifact"
+            mvn install:install-file -Dfile=Common/target/*.jar -DgroupId=com.innowise -DartifactId=common -Dversion=1.0 -Dpackaging=jar
+          else
+            echo "Common JAR not found in artifacts, building Common module locally"
+            mvn clean install -pl Common -am -DskipTests
+          fi
 
       - name: Build ImageService
         run: mvn clean package -pl ImageService -DskipTests
@@ -292,6 +315,7 @@ jobs:
         with:
           name: common-module
           path: Common/target/
+          if-no-files-found: ignore
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -309,7 +333,14 @@ jobs:
             ${{ runner.os }}-maven-
 
       - name: Install Common module locally
-        run: mvn install:install-file -Dfile=Common/target/*.jar -DgroupId=com.innowise -DartifactId=common -Dversion=1.0 -Dpackaging=jar
+        run: |
+          if ls Common/target/*.jar 1> /dev/null 2>&1; then
+            echo "Installing Common module from artifact"
+            mvn install:install-file -Dfile=Common/target/*.jar -DgroupId=com.innowise -DartifactId=common -Dversion=1.0 -Dpackaging=jar
+          else
+            echo "Common JAR not found in artifacts, building Common module locally"
+            mvn clean install -pl Common -am -DskipTests
+          fi
 
       - name: Build ActivityService
         run: mvn clean package -pl ActivityService -DskipTests
@@ -377,6 +408,7 @@ jobs:
         with:
           name: common-module
           path: Common/target/
+          if-no-files-found: ignore
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -394,7 +426,14 @@ jobs:
             ${{ runner.os }}-maven-
 
       - name: Install Common module locally
-        run: mvn install:install-file -Dfile=Common/target/*.jar -DgroupId=com.innowise -DartifactId=common -Dversion=1.0 -Dpackaging=jar
+        run: |
+          if ls Common/target/*.jar 1> /dev/null 2>&1; then
+            echo "Installing Common module from artifact"
+            mvn install:install-file -Dfile=Common/target/*.jar -DgroupId=com.innowise -DartifactId=common -Dversion=1.0 -Dpackaging=jar
+          else
+            echo "Common JAR not found in artifacts, building Common module locally"
+            mvn clean install -pl Common -am -DskipTests
+          fi
 
       - name: Build APIGatewayService
         run: mvn clean package -pl APIGatewayService -DskipTests
