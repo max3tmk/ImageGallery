@@ -8,9 +8,7 @@ import org.springframework.context.annotation.ComponentScan;
         "com.innowise.gateway",
         "com.innowise.common.security"
 })
-@SpringBootApplication(exclude = {
-        org.springframework.boot.autoconfigure.security.reactive.ReactiveUserDetailsServiceAutoConfiguration.class
-})
+@SpringBootApplication(exclude = {org.springframework.boot.autoconfigure.security.reactive.ReactiveUserDetailsServiceAutoConfiguration.class})
 public class GatewayApplication {
     public static void main(String[] args) {
         SpringApplication.run(GatewayApplication.class, args);

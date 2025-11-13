@@ -5,9 +5,9 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$REPO_ROOT" || exit 1
 
-PORTS_SERVICES="8080:authentication-service 8081:image-service 8082:activity-service 8085:api-gateway 5432:postgres 4566:localstack 9092:kafka 27017:mongo"
+PORTS_SERVICES="8080:authentication-service 8081:image-service 8082:activity-service 8085:api-gateway 5432:postgres 4566:localstack 3000:frontend 9092:kafka 27017:mongo 2181:zookeeper"
 
-echo "=== Killing processes on ports (only non-docker processes) ==="
+echo "=== Checking and killing processes on ports ==="
 for entry in $PORTS_SERVICES; do
   port="${entry%%:*}"
   service="${entry##*:}"
@@ -34,45 +34,60 @@ for entry in $PORTS_SERVICES; do
   fi
 done
 
-echo "=== Stopping and removing all containers (keep volumes) ==="
-docker compose down --remove-orphans
+echo "=== Stopping existing infrastructure containers ==="
+docker compose stop postgres mongo localstack kafka zookeeper
 
-echo "=== Building Maven projects (common libs etc.) ==="
-mvn -q clean install -DskipTests
+echo "=== Starting infrastructure services ==="
+docker compose up -d postgres mongo localstack kafka zookeeper
 
-echo "=== Starting postgres, localstack, kafka and mongo ==="
-docker compose up -d postgres localstack kafka mongo zookeeper
-
-echo "=== Initializing LocalStack ==="
-until docker exec localstack awslocal s3 ls >/dev/null 2>&1; do
-  echo "Waiting for LocalStack S3 to be ready..."
+echo "=== Waiting for infrastructure to be ready ==="
+echo "Waiting for PostgreSQL..."
+until docker compose exec postgres pg_isready -U postgres >/dev/null 2>&1; do
+  echo "Waiting for PostgreSQL..."
   sleep 2
 done
-echo "LocalStack S3 is ready."
+echo "PostgreSQL is ready"
 
-echo "=== Creating bucket 'images' (idempotent) ==="
-docker exec localstack awslocal s3 mb s3://images 2>/dev/null || true
-
-echo "=== Uploading test file ==="
-echo "test" > /tmp/test.txt
-docker cp /tmp/test.txt localstack:/tmp/test.txt
-docker exec localstack awslocal s3 cp /tmp/test.txt s3://images/test.txt >/dev/null
-
-echo "=== Waiting for Kafka to be ready ==="
-until nc -z localhost 9092; do
-  echo "Waiting for Kafka port 9092..."
+echo "Waiting for LocalStack..."
+until docker compose exec localstack awslocal s3 ls >/dev/null 2>&1; do
+  echo "Waiting for LocalStack..."
   sleep 2
 done
-echo "Kafka port is ready."
-sleep 5
-echo "Kafka should be ready now."
 
-echo "=== Waiting for MongoDB to be ready ==="
+if ! docker compose exec localstack awslocal s3api head-bucket --bucket images >/dev/null 2>&1; then
+  echo "Creating S3 bucket 'images'"
+  docker compose exec localstack awslocal s3 mb s3://images
+fi
+
+echo "Uploading test file..."
+timestamp=$(date +%s)
+echo "test" > /tmp/test_${timestamp}.txt
+docker cp /tmp/test_${timestamp}.txt localstack:/tmp/test_${timestamp}.txt
+docker compose exec localstack awslocal s3 cp /tmp/test_${timestamp}.txt s3://images/test_${timestamp}.txt >/dev/null
+rm /tmp/test_${timestamp}.txt
+echo "Test file uploaded: test_${timestamp}.txt"
+
+echo "LocalStack is ready"
+
+echo "Waiting for Zookeeper..."
+until nc -z localhost 2181; do
+  echo "Waiting for Zookeeper port 2181..."
+  sleep 2
+done
+echo "Zookeeper port is ready"
+
+echo "Waiting for Kafka..."
+until docker compose exec kafka kafka-broker-api-versions --bootstrap-server localhost:9093 >/dev/null 2>&1; do
+  echo "Waiting for Kafka..."
+  sleep 2
+done
+echo "Kafka is ready"
+
+echo "Waiting for MongoDB..."
 until nc -z localhost 27017; do
   echo "Waiting for MongoDB port 27017..."
   sleep 2
 done
-echo "MongoDB port is ready."
+echo "MongoDB port is ready"
 
-echo "=== LocalStack, Kafka and MongoDB initialization complete ==="
-echo "=== postgres + localstack + kafka + mongo restarted (db persisted) ==="
+echo "=== Infrastructure ready ==="

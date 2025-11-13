@@ -9,10 +9,10 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class GatewayConfig {
 
-    @Value("${app.auth-service.url:http://localhost:8080}")
+    @Value("${AUTH_SERVICE_URL:http://localhost:8080}")
     private String authServiceUrl;
 
-    @Value("${app.image-service.url:http://localhost:8081}")
+    @Value("${IMAGE_SERVICE_URL:http://localhost:8081}")
     private String imageServiceUrl;
 
     @Bean
@@ -20,7 +20,7 @@ public class GatewayConfig {
         return builder.routes()
                 .route("auth_route", r -> r.path("/api/auth/**")
                         .uri(authServiceUrl))
-                .route("image_route", r -> r.path("/api/images/**", "/api/user/**")
+                .route("image_route", r -> r.path("/api/images", "/api/images/**", "/api/user/**")
                         .uri(imageServiceUrl))
                 .build();
     }

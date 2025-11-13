@@ -6,20 +6,6 @@ app:
 spring:
   application:
     name: api-gateway
-  cloud:
-    gateway:
-      server:
-        webflux:
-          routes:
-            - id: auth-service
-              uri: ${AUTH_SERVICE_URL:http://localhost:8080}
-              predicates:
-                - Path=/api/auth/**
-            - id: image-service
-              uri: ${IMAGE_SERVICE_URL:http://localhost:8081}
-              predicates:
-                - Path=/api/images/**
-                - Path=/api/user/*/images
   liquibase:
     enabled: false
 jwt:

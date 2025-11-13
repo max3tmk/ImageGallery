@@ -15,6 +15,7 @@ MODULES["AuthenticationService"]="git@github.com:max3tmk/AuthenticationService.g
 MODULES["Common"]="git@github.com:max3tmk/Common.git"
 MODULES["ImageService"]="git@github.com:max3tmk/ImageService.git"
 MODULES["frontend"]="git@github.com:max3tmk/frontend.git"
+MODULES["ActivityService"]="git@github.com:max3tmk/ActivityService.git"
 
 MONO_COMMIT_BODY="Pull updates from module repositories:\n"
 

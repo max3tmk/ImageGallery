@@ -5,7 +5,7 @@ import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalDateTime
 import java.util.UUID
 
-@Document(collection = "activity")
+@Document(collection = "comment_event")
 data class CommentEvent(
     @Id
     val id: UUID = UUID.randomUUID(),

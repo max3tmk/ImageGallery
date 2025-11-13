@@ -1,4 +1,4 @@
-.PHONY: docker idea clean push pull
+.PHONY: docker idea services clean push pull
 
 default: docker
 
@@ -7,6 +7,9 @@ docker:
 
 idea:
 	./scripts/stack_restart_idea.sh
+
+services:
+	./scripts/start_services_idea.sh
 
 clean:
 	docker compose down -v --remove-orphans

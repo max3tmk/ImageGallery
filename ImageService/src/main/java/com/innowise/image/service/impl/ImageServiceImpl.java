@@ -31,6 +31,9 @@ public class ImageServiceImpl implements ImageService {
     @Value("${s3.bucket}")
     private String s3Bucket;
 
+    @Value("${s3.external-url:http://localhost:4566}")
+    private String s3ExternalUrl;
+
     @Override
     public UploadResponseDto uploadImage(MultipartFile file, UUID userId, String description) throws IOException {
         String key = UUID.randomUUID() + "-" + file.getOriginalFilename();
@@ -45,9 +48,7 @@ public class ImageServiceImpl implements ImageService {
                 software.amazon.awssdk.core.sync.RequestBody.fromInputStream(file.getInputStream(), file.getSize())
         );
 
-        String fileUrl = s3Client.utilities()
-                .getUrl(b -> b.bucket(s3Bucket).key(key))
-                .toString();
+        String fileUrl = generateExternalImageUrl(key);
 
         ImageEntity image = ImageEntity.builder()
                 .url(fileUrl)
@@ -61,6 +62,10 @@ public class ImageServiceImpl implements ImageService {
         response.setId(image.getId());
         response.setUrl(image.getUrl());
         return response;
+    }
+
+    private String generateExternalImageUrl(String key) {
+        return s3ExternalUrl + "/images/" + key;
     }
 
     @Override

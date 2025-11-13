@@ -17,7 +17,7 @@ public class MultipartForwardFilter implements GlobalFilter, Ordered {
 
     private final WebClient webClient;
 
-    @Value("${app.image-service.url:http://localhost:8081}")
+    @Value("${IMAGE_SERVICE_URL:http://localhost:8081}")
     private String imageServiceUrl;
 
     public MultipartForwardFilter(WebClient.Builder webClientBuilder) {

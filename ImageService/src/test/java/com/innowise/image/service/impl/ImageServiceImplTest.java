@@ -87,7 +87,7 @@ class ImageServiceImplTest {
     }
 
     @Test
-    void uploadImage_failure_s3Throws() throws Exception {
+    void uploadImage_failure_s3Throws() {
         UUID userId = UUID.randomUUID();
         MockMultipartFile file = new MockMultipartFile("file", "photo.jpg", "image/jpeg", "abcd".getBytes());
 

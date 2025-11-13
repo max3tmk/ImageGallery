@@ -15,7 +15,7 @@ spec:
       automountServiceAccountToken: false
       containers:
         - name: activity-service
-          image: max3tmk/activity-service:1.0.0-SNAPSHOT
+          image: max3tmk/activity-service:1.0.0
           ports:
             - containerPort: 8082
           env:
@@ -30,7 +30,7 @@ spec:
             - name: SPRING_DATA_MONGODB_PASSWORD
               value: "activitypass"
             - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
-              value: "kafka-service:9092"
+              value: "kafka-service:9093"
           resources:
             requests:
               memory: "256Mi"

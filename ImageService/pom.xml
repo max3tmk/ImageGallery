@@ -6,7 +6,7 @@
     <parent>
         <groupId>com.innowise</groupId>
         <artifactId>ImageGallery</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>1.0.0</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -40,10 +40,12 @@
             <optional>true</optional>
         </dependency>
 
+<!--
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
         </dependency>
+-->
 
         <!-- Postgres -->
         <dependency>
@@ -151,7 +153,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>${maven.compiler.plugin.version}</version>
                 <configuration>
                     <release>${java.version}</release>
                     <compilerArgs>
@@ -170,7 +171,9 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>${spring-boot.version}</version>
+                <configuration>
+                    <mainClass>com.innowise.image.ImageServiceApplication</mainClass>
+                </configuration>
                 <executions>
                     <execution>
                         <goals>

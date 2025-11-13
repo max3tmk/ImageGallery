@@ -1,15 +1,16 @@
 server:
   port: ${SERVER_PORT:8081}
+
 spring:
   application:
     name: image-service
   kafka:
-    bootstrap-servers: localhost:9092
-    producer:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+  producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
       properties:
-        spring.json.trusted.packages: com.innowise.image.dto.event
+        spring.json.trusted.packages: com.innowise.common.dto.event
 
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/innowise}
@@ -22,21 +23,30 @@ spring:
     show-sql: true
   liquibase:
     enabled: false
+  http:
+    codecs:
+      max-in-memory-size: 10MB
+
 s3:
   endpoint: ${S3_ENDPOINT:http://localhost:4566}
   region: ${S3_REGION:us-east-1}
   bucket: ${S3_BUCKET:images}
-  access-key: ${AWS_ACCESS_KEY_ID:test}
-  secret-key: ${AWS_SECRET_ACCESS_KEY:test}
+  access-key: ${S3_ACCESS_KEY:test}
+  secret-key: ${S3_SECRET_KEY:test}
+  external-url: ${S3_EXTERNAL_URL:http://localhost:4566}
+
 jwt:
   secret: ${JWT_SECRET:k7Hj9mQx2pLw8nRv3sTz5yUc1bNv6mKq4fXr7tYw9eZa2sDf8gHj3kLp0oIu}
+
 cors:
   allowed-origins:
-    - "http://localhost:3000"
-    - "http://frontend:3000"
+    - ${CORS_ORIGIN_1:http://localhost:3000}
+    - ${CORS_ORIGIN_2:http://frontend:3000}
+
 auth:
   service:
     url: ${AUTH_SERVICE_URL:http://localhost:8080}
+
 management:
   endpoints:
     web:
@@ -46,5 +56,3 @@ management:
   endpoint:
     health:
       show-details: always
-kafka:
-  bootstrap-servers: localhost:9092

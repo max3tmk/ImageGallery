@@ -5,7 +5,7 @@
 
     <groupId>com.innowise</groupId>
     <artifactId>ImageGallery</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.0</version>
     <packaging>pom</packaging>
 
     <modules>
@@ -41,7 +41,7 @@
         <liquibase.version>4.27.0</liquibase.version>
         <lombok.version>1.18.42</lombok.version>
         <testcontainers.version>1.21.3</testcontainers.version>
-        <software.amazon.awssdk.version>2.34.6</software.amazon.awssdk.version>
+        <software.amazon.awssdk.version>2.20.26</software.amazon.awssdk.version>
         <modelmapper.version>3.2.5</modelmapper.version>
         <jackson.version>2.17.2</jackson.version>
         <flapdoodle.embed.mongo.version>4.6.1</flapdoodle.embed.mongo.version>

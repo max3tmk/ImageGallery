@@ -19,6 +19,7 @@ public class S3Config {
     public S3Client s3Client(S3Properties properties) {
         S3Configuration s3config = S3Configuration.builder()
                 .pathStyleAccessEnabled(true)
+                .checksumValidationEnabled(false)
                 .build();
 
         return S3Client.builder()

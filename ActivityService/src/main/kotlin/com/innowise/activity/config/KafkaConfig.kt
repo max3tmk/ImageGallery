@@ -17,7 +17,7 @@ open class KafkaConfig {
     @Bean
     open fun consumerFactory(): ConsumerFactory<String, Any> {
         val props = mutableMapOf<String, Any>()
-        props[ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG] = "localhost:9092"
+        props[ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG] = System.getenv("SPRING_KAFKA_BOOTSTRAP_SERVERS") ?: "localhost:9092"
         props[ConsumerConfig.GROUP_ID_CONFIG] = "activity-group"
         props[ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG] = StringDeserializer::class.java
         props[ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG] = JsonDeserializer::class.java

@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -32,7 +32,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 import java.util.UUID;
-
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
@@ -46,8 +45,8 @@ public class ImageController {
     @PostMapping(value = "/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<UploadResponseDto> uploadImage(
             @RequestHeader(name = "Authorization", required = false) String authHeader,
-            @RequestPart("file") MultipartFile file,
-            @RequestPart(name = "description", required = false) String description
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(name = "description", required = false) String description
     ) throws IOException {
 
         UUID userId = extractUserIdFromAuthHeader(authHeader);

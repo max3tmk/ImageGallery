@@ -12,6 +12,11 @@ services:
       - innowise-network
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   mongo:
     image: mongo:6.0
@@ -27,21 +32,31 @@ services:
     volumes:
       - mongo_data:/data/db
       - ./mongo-init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   localstack:
-    image: localstack/localstack:4.9.2
+    image: localstack/localstack:0.14.2
     container_name: localstack
     environment:
       - SERVICES=s3
+      - DATA_DIR=/tmp/localstack
       - DEBUG=1
-      - LOCALSTACK_HOST=0.0.0.0
-      - DATA_DIR=/var/lib/localstack
     ports:
       - "4566:4566"
     networks:
       - innowise-network
     volumes:
-      - localstack_data:/var/lib/localstack
+      - localstack_data:/tmp/localstack
+      - ./localstack-init:/docker-entrypoint-initaws.d:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4566/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
@@ -53,12 +68,18 @@ services:
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
+    healthcheck:
+      test: ["CMD-SHELL", "netstat -tln | grep 2181 || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   kafka:
     image: confluentinc/cp-kafka:7.5.0
     container_name: kafka
     depends_on:
-      - zookeeper
+      zookeeper:
+        condition: service_started
     ports:
       - "9092:9092"
     networks:
@@ -66,13 +87,35 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:9093,EXTERNAL://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9093,EXTERNAL://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: true
       KAFKA_NUM_PARTITIONS: 3
+    healthcheck:
+      test: kafka-broker-api-versions --bootstrap-server localhost:9093
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  kafka-init:
+    image: confluentinc/cp-kafka:7.5.0
+    depends_on:
+      kafka:
+        condition: service_started
+    command: >
+      bash -c "
+        echo 'Waiting for Kafka...' &&
+        kafka-topics --bootstrap-server kafka:9093 --list &&
+        echo 'Creating topics...' &&
+        kafka-topics --bootstrap-server kafka:9093 --create --if-not-exists --topic image-comment-events --partitions 3 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:9093 --create --if-not-exists --topic image-like-events --partitions 3 --replication-factor 1 &&
+        echo 'Topics created.'
+      "
+    networks:
+      - innowise-network
 
   authentication-service:
     build:
@@ -80,15 +123,86 @@ services:
       dockerfile: Dockerfile
     container_name: authentication-service
     environment:
-      SERVER_PORT: 8080
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/innowise
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-app:5432/innowise
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
       JWT_SECRET: k7Hj9mQx2pLw8nRv3sTz5yUc1bNv6mKq4fXr7tYw9eZa2sDf8gHj3kLp0oIu
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
     ports:
       - "8080:8080"
+    networks:
+      - innowise-network
+
+  image-service:
+    build:
+      context: ./ImageService
+      dockerfile: Dockerfile
+    container_name: image-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-app:5432/innowise
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9093
+      S3_ENDPOINT: http://localstack:4566
+      S3_REGION: us-east-1
+      S3_ACCESS_KEY: test
+      S3_SECRET_KEY: test
+      S3_EXTERNAL_URL: http://localhost:4566
+      S3_BUCKET: images
+      AUTH_SERVICE_URL: http://authentication-service:8080
+      JWT_SECRET: k7Hj9mQx2pLw8nRv3sTz5yUc1bNv6mKq4fXr7tYw9eZa2sDf8gHj3kLp0oIu
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+      localstack:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8081/actuator/health >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    ports:
+      - "8081:8081"
+    networks:
+      - innowise-network
+
+  activity-service:
+    build:
+      context: ./ActivityService
+      dockerfile: Dockerfile
+    container_name: activity-service
+    environment:
+      SPRING_DATA_MONGODB_HOST: mongo
+      SPRING_DATA_MONGODB_PORT: 27017
+      SPRING_DATA_MONGODB_DATABASE: activitydb
+      SPRING_DATA_MONGODB_USERNAME: ${MONGO_ACTIVITY_USER:-activityuser}
+      SPRING_DATA_MONGODB_PASSWORD: ${MONGO_ACTIVITY_PASSWORD:-activitypass}
+      SPRING_DATA_MONGODB_AUTHENTICATION_DATABASE: ${MONGO_AUTH_DB:-activitydb}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9093
+    depends_on:
+      mongo:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8082/actuator/health >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    ports:
+      - "8082:8082"
     networks:
       - innowise-network
 
@@ -98,13 +212,27 @@ services:
       dockerfile: Dockerfile
     container_name: api-gateway
     depends_on:
-      - authentication-service
+      authentication-service:
+        condition: service_started
+      image-service:
+        condition: service_started
+      activity-service:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8085/actuator/health >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
     ports:
       - "8085:8085"
     environment:
-      - AUTH_SERVICE_URL=http://authentication-service:8080
-      - IMAGE_SERVICE_URL=http://image-service:8081
-      - ACTIVITY_SERVICE_URL=http://activity-service:8082
+      AUTH_SERVICE_URL: http://authentication-service:8080
+      IMAGE_SERVICE_URL: http://image-service:8081
+      ACTIVITY_SERVICE_URL: http://activity-service:8082
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9093
+      JWT_SECRET: k7Hj9mQx2pLw8nRv3sTz5yUc1bNv6mKq4fXr7tYw9eZa2sDf8gHj3kLp0oIu
+      CORS_ORIGINS: http://localhost:3000
     networks:
       - innowise-network
 
@@ -118,50 +246,10 @@ services:
     networks:
       - innowise-network
     depends_on:
-      - api-gateway
-
-  image-service:
-    build:
-      context: ./ImageService
-      dockerfile: Dockerfile
-    container_name: image-service
+      api-gateway:
+        condition: service_started
     environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_NAME: innowise
-      DB_USERNAME: postgres
-      DB_PASSWORD: postgres
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-    depends_on:
-      - postgres
-      - kafka
-    ports:
-      - "8081:8081"
-    networks:
-      - innowise-network
-
-  activity-service:
-    build:
-      context: ./ActivityService
-      dockerfile: Dockerfile
-    container_name: activity-service
-    environment:
-      SPRING_PROFILES_ACTIVE: docker
-      SPRING_DATA_MONGODB_HOST: mongo
-      SPRING_DATA_MONGODB_PORT: 27017
-      SPRING_DATA_MONGODB_DATABASE: activitydb
-      SPRING_DATA_MONGODB_USERNAME: ${MONGO_ACTIVITY_USER:-activityuser}
-      SPRING_DATA_MONGODB_PASSWORD: ${MONGO_ACTIVITY_PASSWORD:-activitypass}
-      SPRING_DATA_MONGODB_AUTHENTICATION_DATABASE: ${MONGO_AUTH_DB:-activitydb}
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-    depends_on:
-      - mongo
-      - kafka
-      - zookeeper
-    ports:
-      - "8082:8082"
-    networks:
-      - innowise-network
+      - VITE_API_URL=http://localhost:8085/api
 
 networks:
   innowise-network:
@@ -169,5 +257,5 @@ networks:
 
 volumes:
   postgres_data:
-  localstack_data:
   mongo_data:
+  localstack_data:
