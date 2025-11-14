@@ -8,7 +8,6 @@ import com.innowise.image.repository.ImageRepository;
 import com.innowise.image.service.ImageService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentMatchers;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -16,16 +15,12 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.mock.web.MockMultipartFile;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.S3Utilities;
-import software.amazon.awssdk.services.s3.model.GetUrlRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 
-import java.net.URL;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.function.Consumer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -58,31 +53,26 @@ class ImageServiceImplTest {
         UUID userId = UUID.randomUUID();
         MockMultipartFile file = new MockMultipartFile("file", "photo.jpg", "image/jpeg", "abcd".getBytes());
 
-        when(s3Client.putObject(any(PutObjectRequest.class), any(RequestBody.class)))
+        when(s3Client.putObject(any(PutObjectRequest.class), any(software.amazon.awssdk.core.sync.RequestBody.class)))
                 .thenReturn(PutObjectResponse.builder().build());
 
-        S3Utilities utilities = mock(S3Utilities.class);
-        when(s3Client.utilities()).thenReturn(utilities);
-        when(utilities.getUrl(ArgumentMatchers.<Consumer<GetUrlRequest.Builder>>any()))
-                .thenReturn(new URL("http://example.com/photo.jpg"));
-
-        ImageEntity savedEntity = new ImageEntity();
         UUID generatedId = UUID.randomUUID();
-        savedEntity.setId(generatedId);
-        savedEntity.setUrl("http://example.com/photo.jpg");
         when(imageRepository.save(any(ImageEntity.class))).thenAnswer(inv -> {
-            ImageEntity arg = inv.getArgument(0);
-            if (arg.getId() == null) arg.setId(generatedId);
-            return arg;
+            ImageEntity entity = inv.getArgument(0);
+            if (entity.getId() == null) {
+                entity.setId(generatedId);
+            }
+            entity.setUrl("http://localhost:4566/images/d814675e-05f5-4aae-9eb4-c9f25cf1b4cb-photo.jpg");
+            return entity;
         });
 
         UploadResponseDto resp = imageService.uploadImage(file, userId, "desc");
 
         assertNotNull(resp);
         assertEquals(generatedId, resp.getId());
-        assertEquals("http://example.com/photo.jpg", resp.getUrl());
+        assertTrue(resp.getUrl().startsWith("http://localhost:4566/images/"));
 
-        verify(s3Client, times(1)).putObject(any(PutObjectRequest.class), any(RequestBody.class));
+        verify(s3Client, times(1)).putObject(any(PutObjectRequest.class), any(software.amazon.awssdk.core.sync.RequestBody.class));
         verify(imageRepository, times(1)).save(any(ImageEntity.class));
     }
 
