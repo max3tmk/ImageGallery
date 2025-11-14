@@ -374,8 +374,8 @@ jobs:
       - name: Build ImageService
         run: mvn clean package -pl ImageService -DskipTests
 
-      - name: Run Tests (skipping failing test for now)
-        run: mvn test -pl ImageService -Dtest=!ImageServiceImplTest#uploadImage_success
+      - name: Run Tests
+        run: mvn test -pl ImageService
 
       - name: Run SonarQube Analysis
         if: github.ref == 'refs/heads/main'
@@ -616,8 +616,8 @@ jobs:
       - name: Build APIGatewayService
         run: mvn clean package -pl APIGatewayService -DskipTests
 
-      - name: Run Tests (skipping failing test for now)
-        run: mvn test -pl APIGatewayService -Dtest=!MultipartForwardFilterTest
+      - name: Run Tests
+        run: mvn test -pl APIGatewayService
 
       - name: Run SonarQube Analysis
         if: github.ref == 'refs/heads/main'
