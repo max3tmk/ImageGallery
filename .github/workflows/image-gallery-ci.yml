@@ -266,6 +266,7 @@ jobs:
             -Dsonar.projectKey=${{ secrets.DOCKER_HUB_USERNAME }}_ImageGallery_authservice \
             -Dsonar.host.url=https://sonarcloud.io \
             -Dsonar.organization=${{ secrets.DOCKER_HUB_USERNAME }}
+            -Dsonar.projectBaseDir=.
 
       - name: Set up Docker Buildx
         if: github.ref == 'refs/heads/main'
@@ -387,6 +388,7 @@ jobs:
             -Dsonar.projectKey=${{ secrets.DOCKER_HUB_USERNAME }}_ImageGallery_imageservice \
             -Dsonar.host.url=https://sonarcloud.io \
             -Dsonar.organization=${{ secrets.DOCKER_HUB_USERNAME }}
+            -Dsonar.projectBaseDir=.
 
       - name: Set up Docker Buildx
         if: github.ref == 'refs/heads/main'
@@ -508,6 +510,7 @@ jobs:
             -Dsonar.projectKey=${{ secrets.DOCKER_HUB_USERNAME }}_ImageGallery_activityservice \
             -Dsonar.host.url=https://sonarcloud.io \
             -Dsonar.organization=${{ secrets.DOCKER_HUB_USERNAME }}
+            -Dsonar.projectBaseDir=.
 
       - name: Set up Docker Buildx
         if: github.ref == 'refs/heads/main'
@@ -629,6 +632,7 @@ jobs:
             -Dsonar.projectKey=${{ secrets.DOCKER_HUB_USERNAME }}_ImageGallery_gateway \
             -Dsonar.host.url=https://sonarcloud.io \
             -Dsonar.organization=${{ secrets.DOCKER_HUB_USERNAME }}
+            -Dsonar.projectBaseDir=.
 
       - name: Set up Docker Buildx
         if: github.ref == 'refs/heads/main'

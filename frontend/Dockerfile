@@ -2,8 +2,7 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci --ignore-scripts
-COPY src ./src
-COPY public ./public
+COPY . .
 RUN npm rebuild --ignore-scripts && npm run build
 FROM nginx:1.27-alpine
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
