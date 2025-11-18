@@ -50,6 +50,9 @@
         <junit.jupiter.version>5.10.0</junit.jupiter.version>
         <mockito.version>5.5.0</mockito.version>
         <spring.test.version>${spring-boot.version}</spring.test.version>
+
+        <!-- SonarQube -->
+        <sonar.organization>innowise-max3tmk</sonar.organization>
     </properties>
 
     <dependencyManagement>

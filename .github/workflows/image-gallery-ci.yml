@@ -260,12 +260,10 @@ jobs:
         if: github.ref == 'refs/heads/main'
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_ORGANIZATION: ${{ secrets.DOCKER_HUB_USERNAME }}
         run: |
           mvn verify sonar:sonar \
             -Dsonar.host.url=https://sonarcloud.io \
-            -Dsonar.organization=${SONAR_ORGANIZATION} \
+            -Dsonar.projectKey=ImageGallery \
             -Dsonar.projectBaseDir=AuthenticationService
 
       - name: Set up Docker Buildx
@@ -382,12 +380,10 @@ jobs:
         if: github.ref == 'refs/heads/main'
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_ORGANIZATION: ${{ secrets.DOCKER_HUB_USERNAME }}
         run: |
           mvn verify sonar:sonar \
             -Dsonar.host.url=https://sonarcloud.io \
-            -Dsonar.organization=${SONAR_ORGANIZATION} \
+            -Dsonar.projectKey=ImageGallery \
             -Dsonar.projectBaseDir=ImageService
 
       - name: Set up Docker Buildx
@@ -504,12 +500,10 @@ jobs:
         if: github.ref == 'refs/heads/main'
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_ORGANIZATION: ${{ secrets.DOCKER_HUB_USERNAME }}
         run: |
           mvn verify sonar:sonar \
             -Dsonar.host.url=https://sonarcloud.io \
-            -Dsonar.organization=${SONAR_ORGANIZATION} \
+            -Dsonar.projectKey=ImageGallery \
             -Dsonar.projectBaseDir=ActivityService
 
       - name: Set up Docker Buildx
@@ -626,12 +620,10 @@ jobs:
         if: github.ref == 'refs/heads/main'
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_ORGANIZATION: ${{ secrets.DOCKER_HUB_USERNAME }}
         run: |
           mvn verify sonar:sonar \
             -Dsonar.host.url=https://sonarcloud.io \
-            -Dsonar.organization=${SONAR_ORGANIZATION} \
+            -Dsonar.projectKey=ImageGallery \
             -Dsonar.projectBaseDir=APIGatewayService
 
       - name: Set up Docker Buildx
