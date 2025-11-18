@@ -38,7 +38,7 @@ jobs:
         run: |
           mvn clean install -pl Common -am -DskipTests
           mkdir -p common-artifact
-          cp Common/target/*.jar common-artifact/
+          cp Common/target/*.jar common-artifact/common.jar
           cp Common/pom.xml common-artifact/
 
       - name: Upload Common artifacts
@@ -73,7 +73,7 @@ jobs:
       - name: Install Common module
         run: |
           mvn install:install-file \
-            -Dfile=common-artifact/*.jar \
+            -Dfile=common-artifact/common.jar \
             -DgroupId=com.innowise \
             -DartifactId=common \
             -Dversion=1.0 \
@@ -134,7 +134,7 @@ jobs:
       - name: Install Common module
         run: |
           mvn install:install-file \
-            -Dfile=common-artifact/*.jar \
+            -Dfile=common-artifact/common.jar \
             -DgroupId=com.innowise \
             -DartifactId=common \
             -Dversion=1.0 \
