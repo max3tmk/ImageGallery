@@ -14,4 +14,4 @@ RUN chown -R appuser:appgroup /usr/share/nginx/html && \
     chown -R appuser:appgroup /etc/nginx/conf.d
 USER appuser
 EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["nginx", "-g", "daemon off; pid /tmp/nginx.pid;"]
