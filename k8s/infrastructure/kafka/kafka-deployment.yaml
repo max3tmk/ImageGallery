@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka
+  template:
+    metadata:
+      labels:
+        app: kafka
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: kafka
+          image: apache/kafka:3.8.0
+          ports:
+            - containerPort: 9092
+            - containerPort: 9093
+          env:
+            - name: CLUSTER_ID
+              value: "4L6g3mN8T4K1jZ9Q2wX5vY7b"
+          volumeMounts:
+            - name: kafka-storage
+              mountPath: /var/lib/kafka/data
+            - name: kafka-config
+              mountPath: /opt/kafka/config/kraft
+          command:
+            - sh
+            - -c
+            - >-
+              if [ ! -f /var/lib/kafka/data/meta.properties ]; then
+                echo "Formatting Kafka storage with cluster ID: $$CLUSTER_ID" &&
+                /opt/kafka/bin/kafka-storage.sh format -t $$CLUSTER_ID -c /opt/kafka/config/kraft/server.properties
+              fi &&
+              echo "Starting Kafka in KRaft mode..." &&
+              /opt/kafka/bin/kafka-server-start.sh /opt/kafka/config/kraft/server.properties
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+              ephemeral-storage: "1Gi"
+            limits:
+              memory: "2Gi"
+              ephemeral-storage: "3Gi"
+          readinessProbe:
+            tcpSocket:
+              port: 9092
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            tcpSocket:
+              port: 9092
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+      volumes:
+        - name: kafka-storage
+          persistentVolumeClaim:
+            claimName: kafka-pvc
+        - name: kafka-config
+          configMap:
+            name: kafka-config

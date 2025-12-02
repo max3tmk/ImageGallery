@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: activity-service
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: activity-service
+  template:
+    metadata:
+      labels:
+        app: activity-service
+    spec:
+      initContainers:
+        - name: wait-for-mongo
+          image: mongo:6.0
+          command:
+            - bash
+            - -c
+            - |
+              echo "Waiting for MongoDB to be ready..."
+              until mongosh --host mongo-service --port 27017 --eval "db.adminCommand('ping')" >/dev/null 2>&1; do
+                sleep 2
+              done
+              echo "MongoDB is ready."
+      containers:
+        - name: activity-service
+          image: activity-service:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8082
+          env:
+            - name: SPRING_DATA_MONGODB_HOST
+              value: "mongo-service"
+            - name: SPRING_DATA_MONGODB_PORT
+              value: "27017"
+            - name: SPRING_DATA_MONGODB_DATABASE
+              value: "activitydb"
+            - name: SPRING_DATA_MONGODB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: mongo-activity-username
+            - name: SPRING_DATA_MONGODB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: mongo-activity-password
+            - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+              value: "kafka-service:9092"
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "512Mi"
+              ephemeral-storage: "256Mi"
+            limits:
+              memory: "1Gi"
+              ephemeral-storage: "512Mi"
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8082
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8082
+            initialDelaySeconds: 60
+            periodSeconds: 30

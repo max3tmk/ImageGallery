@@ -1,4 +1,4 @@
-.PHONY: docker idea services clean push pull
+.PHONY: docker idea services clean push pull k8s-start k8s-stop k8s-status
 
 default: docker
 
@@ -20,3 +20,13 @@ push:
 
 pull:
 	/usr/local/bin/bash ./scripts/pull-all.sh
+
+k8s-start:
+	./scripts/start-k8s.sh
+
+k8s-stop:
+	pkill -f "kubectl port-forward" || true
+	minikube stop
+
+k8s-status:
+	kubectl get pods

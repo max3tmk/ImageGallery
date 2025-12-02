@@ -1,0 +1,44 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kafka-init-topics
+spec:
+  template:
+    spec:
+      automountServiceAccountToken: false
+      initContainers:
+        - name: wait-for-kafka
+          image: apache/kafka:3.8.0
+          command:
+            - sh
+            - -c
+            - |
+              echo "Waiting for Kafka to be ready..."
+              until /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka-service:9092 --list >/dev/null 2>&1; do
+                echo "Kafka is not ready yet..."
+                sleep 5
+              done
+              echo "Kafka is ready!"
+      containers:
+        - name: kafka-init
+          image: apache/kafka:3.8.0
+          command:
+            - sh
+            - -c
+            - |
+              echo "Creating topics..."
+              /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka-service:9092 --create --if-not-exists --topic image-comment-events --partitions 3 --replication-factor 1
+              /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka-service:9092 --create --if-not-exists --topic image-like-events --partitions 3 --replication-factor 1
+              echo "Topics created."
+          env:
+            - name: KAFKA_OPTS
+              value: "-Dorg.apache.kafka.client.DnsLookup=use_all_dns_ips"
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+              ephemeral-storage: "128Mi"
+            limits:
+              memory: "256Mi"
+              ephemeral-storage: "256Mi"
+      restartPolicy: OnFailure

@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: localstack
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: localstack
+  template:
+    metadata:
+      labels:
+        app: localstack
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: localstack
+          image: localstack/localstack:0.14.2
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 4566
+          env:
+            - name: SERVICES
+              value: "s3"
+            - name: DATA_DIR
+              value: "/tmp/localstack"
+            - name: LOCALSTACK_HOST
+              value: "0.0.0.0"
+            - name: AWS_ACCESS_KEY_ID
+              value: "test"
+            - name: AWS_SECRET_ACCESS_KEY
+              value: "test"
+          volumeMounts:
+            - name: localstack-storage
+              mountPath: /tmp/localstack
+            - name: localstack-init
+              mountPath: /docker-entrypoint-initaws.d
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "512Mi"
+              ephemeral-storage: "512Mi"
+            limits:
+              memory: "1Gi"
+              ephemeral-storage: "2Gi"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 4566
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 4566
+            initialDelaySeconds: 30
+            periodSeconds: 15
+      volumes:
+        - name: localstack-storage
+          persistentVolumeClaim:
+            claimName: localstack-pvc
+        - name: localstack-init
+          configMap:
+            name: localstack-init-config
+            defaultMode: 0755
