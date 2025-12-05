@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: mongo-init
+  name: mongo-init-config
 data:
   01-init-users.js: |
     db = db.getSiblingDB('activitydb');

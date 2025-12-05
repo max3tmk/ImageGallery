@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: localstack-init-config
+
+data:
+  init-s3.sh: |
+    #!/bin/bash
+    awslocal s3 mb s3://images
+    echo "Bucket 'images' created."

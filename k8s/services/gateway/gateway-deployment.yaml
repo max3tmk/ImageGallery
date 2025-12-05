@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api-gateway
+  template:
+    metadata:
+      labels:
+        app: api-gateway
+    spec:
+      automountServiceAccountToken: false
+      initContainers:
+        - name: wait-for-dependencies
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              echo "Waiting for Authentication Service...";
+              until nc -z authentication-service 8080; do sleep 3; done;
+              echo "Authentication Service is ready!";
+              echo "Waiting for Image Service...";
+              until nc -z image-service 8081; do sleep 3; done;
+              echo "Image Service is ready!";
+              echo "Waiting for Activity Service...";
+              until nc -z activity-service 8082; do sleep 3; done;
+              echo "Activity Service is ready!";
+      containers:
+        - name: api-gateway
+          image: api-gateway:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8085
+          env:
+            - name: AUTH_SERVICE_URL
+              value: "http://authentication-service:8080"
+            - name: IMAGE_SERVICE_URL
+              value: "http://image-service:8081"
+            - name: ACTIVITY_SERVICE_URL
+              value: "http://activity-service:8082"
+            - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+              value: "kafka-service:9092"
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: jwt-secret
+            - name: CORS_ORIGINS
+              value: "http://localhost:3000"
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "384Mi"
+              ephemeral-storage: "256Mi"
+            limits:
+              memory: "768Mi"
+              ephemeral-storage: "512Mi"
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8085
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8085
+            initialDelaySeconds: 60
+            periodSeconds: 30
